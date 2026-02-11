@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+{% block title_suffix %} — Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Visão executiva do ambiente Oracle — Getnet / PagoNxt{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- KPI Cards -->
+<div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card accent-1">
+        <div class="kpi-icon purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="18" rx="2" />
+                <path d="M2 8h20" />
+            </svg>
+        </div>
+        <div class="kpi-label">Servidores Oracle</div>
+        <div class="kpi-value" id="kpiServers">—</div>
+        <div class="kpi-detail" id="kpiServersDetail"></div>
+    </div>
+    <div class="kpi-card accent-2">
+        <div class="kpi-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                <path d="M22 4L12 14.01l-3-3" />
+            </svg>
+        </div>
+        <div class="kpi-label">PSU Atualizado (19.29+)</div>
+        <div class="kpi-value" id="kpiUpdated" style="color: var(--success)">—</div>
+        <div class="kpi-detail" id="kpiUpdatedDetail"></div>
+    </div>
+    <div class="kpi-card accent-3">
+        <div class="kpi-icon orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+                <rect x="9" y="3" width="6" height="4" rx="1" />
+            </svg>
+        </div>
+        <div class="kpi-label">GMUDs Total</div>
+        <div class="kpi-value" id="kpiGmuds">—</div>
+        <div class="kpi-detail" id="kpiGmudsDetail"></div>
+    </div>
+    <div class="kpi-card accent-4">
+        <div class="kpi-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 8v8M8 12h8" />
+            </svg>
+        </div>
+        <div class="kpi-label">Total CMDB</div>
+        <div class="kpi-value" id="kpiCmdb">—</div>
+        <div class="kpi-detail" id="kpiCmdbDetail"></div>
+    </div>
+    <div class="kpi-card accent-4">
+        <div class="kpi-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+        </div>
+        <div class="kpi-label">CMDB Full</div>
+        <div class="kpi-value" id="kpiCmdbFull">—</div>
+        <div class="kpi-detail" id="kpiCmdbFullDetail"></div>
+    </div>
+    <div class="kpi-card accent-5">
+        <div class="kpi-icon red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+        </div>
+        <div class="kpi-label">PSU Desatualizado</div>
+        <div class="kpi-value" id="kpiOutdated" style="color: var(--danger)">—</div>
+        <div class="kpi-detail" id="kpiOutdatedDetail"></div>
+    </div>
+</div>
+
+<!-- Environment Heatmap -->
+<div class="chart-card full-width" style="margin-bottom: 20px; animation-delay: 0.3s">
+    <div class="chart-header">
+        <div>
+            <div class="chart-title">📍 Distribuição por Entorno</div>
+            <div class="chart-subtitle">Servidores Oracle por ambiente</div>
+        </div>
+    </div>
+    <div class="env-grid" id="envGrid"></div>
+</div>
+
+<!-- Charts Row -->
+<div class="charts-grid">
+    <div class="chart-card" style="animation-delay: 0.35s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">🔄 Versão PSU por Servidor</div>
+                <div class="chart-subtitle">Distribuição de versões Oracle</div>
+            </div>
+        </div>
+        <div class="chart-body">
+            <canvas id="chartPsu"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card" style="animation-delay: 0.4s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">📊 GMUDs por Status</div>
+                <div class="chart-subtitle">Situação das changes</div>
+            </div>
+        </div>
+        <div class="chart-body">
+            <canvas id="chartGmudStatus"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="charts-grid">
+    <div class="chart-card full-width" style="animation-delay: 0.45s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">📈 Evolução Mensal de GMUDs</div>
+                <div class="chart-subtitle">Quantidade de changes por mês</div>
+            </div>
+        </div>
+        <div class="chart-body">
+            <canvas id="chartMonthly"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="charts-grid">
+    <div class="chart-card" style="animation-delay: 0.5s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">🗄️ Bancos por Tecnologia</div>
+                <div class="chart-subtitle">CMDB — tipo de banco de dados</div>
+            </div>
+        </div>
+        <div class="chart-body">
+            <canvas id="chartDbType"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card" style="animation-delay: 0.55s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">👥 GMUDs por Recurso</div>
+                <div class="chart-subtitle">Top executores de changes</div>
+            </div>
+        </div>
+        <div class="chart-body" id="teamStats"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        applyChartDefaults();
+
+        try {
+            const data = await API.dashboard();
+            renderKPIs(data);
+            renderEnvGrid(data);
+            renderPsuChart(data);
+            renderGmudStatusChart(data);
+            renderMonthlyChart(data);
+            renderDbTypeChart(data);
+            renderTeamStats(data);
+        } catch (e) {
+            showToast('Erro ao carregar dashboard: ' + e.message, 'error');
+        }
+    });
+
+
+    function renderKPIs(data) {
+        // Total servers
+        animateValue(document.getElementById('kpiServers'), 0, data.total_servers);
+
+        // Updated (19.28+)
+        const updated = data.servers_by_psu
+            .filter(s => s.psu_version && (s.psu_version.includes('19.29') || s.psu_version.includes('19.28')))
+            .reduce((sum, s) => sum + s.cnt, 0);
+        const pct = data.total_servers > 0 ? Math.round(updated / data.total_servers * 100) : 0;
+        animateValue(document.getElementById('kpiUpdated'), 0, updated);
+        document.getElementById('kpiUpdatedDetail').innerHTML =
+            `<span class="kpi-badge up">▲ ${pct}%</span> do total`;
+
+        // Total GMUDs
+        animateValue(document.getElementById('kpiGmuds'), 0, data.total_gmuds);
+        const encerradas = data.gmuds_by_status.find(s => s.status && s.status.toUpperCase().includes('ENCERRADA'));
+        if (encerradas) {
+            document.getElementById('kpiGmudsDetail').innerHTML =
+                `<span class="kpi-badge up">${encerradas.cnt}</span> encerradas`;
+        }
+
+        // CMDB
+        animateValue(document.getElementById('kpiCmdb'), 0, data.total_cmdb);
+        const oracleCount = data.cmdb_by_type.find(t => t.db_type === 'Oracle');
+        if (oracleCount) {
+            document.getElementById('kpiCmdbDetail').textContent = `${oracleCount.cnt} Oracle`;
+        }
+
+        // CMDB Full (Adicionado v1.5)
+        if (data.total_cmdb_full) {
+            animateValue(document.getElementById('kpiCmdbFull'), 0, data.total_cmdb_full);
+            document.getElementById('kpiCmdbFullDetail').textContent = 'GetNet + PagoNxt';
+        }
+
+        // Outdated
+        const outdated = data.servers_by_psu
+            .filter(s => s.psu_version && !s.psu_version.includes('19.29') && !s.psu_version.includes('19.28'))
+            .reduce((sum, s) => sum + s.cnt, 0);
+        animateValue(document.getElementById('kpiOutdated'), 0, outdated);
+        const outdatedPct = data.total_servers > 0 ? Math.round(outdated / data.total_servers * 100) : 0;
+        document.getElementById('kpiOutdatedDetail').innerHTML =
+            `<span class="kpi-badge down">▼ ${outdatedPct}%</span> precisam atualização`;
+
+        // Server breakdown detail
+        const standbyInfo = data.with_standby ? `${data.with_standby} com standby` : '';
+        const standaloneInfo = data.standalone ? `${data.standalone} standalone` : '';
+        const ggsInfo = data.total_ggs ? ` · ${data.total_ggs} GGS` : '';
+        document.getElementById('kpiServersDetail').innerHTML =
+            `${standbyInfo}, ${standaloneInfo}${ggsInfo}`;
+    }
+
+
+    function renderEnvGrid(data) {
+        const grid = document.getElementById('envGrid');
+        const total = data.total_servers || 1;
+        const colors = {
+            'Produção': { bar: 'var(--danger)', text: '#f87171' },
+            'Homologação': { bar: 'var(--warning)', text: '#fbbf24' },
+            'Desenvolvimento': { bar: 'var(--info)', text: '#60a5fa' },
+            'Transacional': { bar: 'var(--accent-secondary)', text: '#00bbff' },
+        };
+
+        grid.innerHTML = data.servers_by_env
+            .filter(e => e.environment && e.environment.trim())
+            .map(env => {
+                const pct = Math.round(env.cnt / total * 100);
+                const c = colors[env.environment] || { bar: 'var(--accent-primary)', text: 'var(--text-primary)' };
+                return `
+                <div class="env-card">
+                    <div class="env-name">${env.environment}</div>
+                    <div class="env-count" style="color: ${c.text}">${env.cnt}</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted)">${pct}% do total</div>
+                    <div class="env-bar">
+                        <div class="env-bar-fill" style="width: ${pct}%; background: ${c.bar}"></div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+    }
+
+
+    function renderPsuChart(data) {
+        const ctx = document.getElementById('chartPsu').getContext('2d');
+        const psuData = data.servers_by_psu.filter(s => s.psu_version && s.psu_version.trim());
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: psuData.map(s => s.psu_version),
+                datasets: [{
+                    data: psuData.map(s => s.cnt),
+                    backgroundColor: CHART_COLORS.palette.slice(0, psuData.length),
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { padding: 12, font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+
+
+    function renderGmudStatusChart(data) {
+        const ctx = document.getElementById('chartGmudStatus').getContext('2d');
+        const statusData = data.gmuds_by_status.filter(s => s.status && s.status.trim());
+
+        const statusColors = {
+            'ENCERRADA': '#10b981',
+            'Encerrada': '#10b981',
+            'IMPLEMENTAR': '#3b82f6',
+            'REPLANEJAR': '#f59e0b',
+            'REPLANEJADA': '#f59e0b',
+            'CANCELADA': '#ef4444',
+        };
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: statusData.map(s => s.status),
+                datasets: [{
+                    data: statusData.map(s => s.cnt),
+                    backgroundColor: statusData.map(s => statusColors[s.status] || '#0088ee'),
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { padding: 12, font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+
+
+    function renderMonthlyChart(data) {
+        const ctx = document.getElementById('chartMonthly').getContext('2d');
+        const months = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+        const sorted = data.gmuds_by_month.sort((a, b) => a.year * 100 + a.month - (b.year * 100 + b.month));
+        const labels = sorted.map(m => `${months[m.month]}/${m.year.toString().slice(-2)}`);
+        const values = sorted.map(m => m.cnt);
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'GMUDs',
+                    data: values,
+                    backgroundColor: values.map((_, i) => {
+                        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                        gradient.addColorStop(0, 'rgba(0, 136, 238, 0.8)');
+                        gradient.addColorStop(1, 'rgba(0, 136, 238, 0.2)');
+                        return gradient;
+                    }),
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barPercentage: 0.7,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
+                }
+            }
+        });
+    }
+
+
+    function renderDbTypeChart(data) {
+        const ctx = document.getElementById('chartDbType').getContext('2d');
+        const dbData = data.cmdb_by_type.filter(t => t.db_type && t.db_type.trim());
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dbData.map(d => d.db_type),
+                datasets: [{
+                    label: 'Quantidade',
+                    data: dbData.map(d => d.cnt),
+                    backgroundColor: CHART_COLORS.palette.slice(0, dbData.length),
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barPercentage: 0.6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+
+    function renderTeamStats(data) {
+        const container = document.getElementById('teamStats');
+        const team = data.gmuds_by_person.filter(t => t.assigned_to && t.assigned_to.trim()).slice(0, 10);
+        const max = team.length > 0 ? team[0].cnt : 1;
+
+        container.innerHTML = team.map(t => `
+        <div class="team-row">
+            <span class="team-name">${t.assigned_to}</span>
+            <div class="progress-bar-container" style="flex: 1; margin: 0 16px;">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${Math.round(t.cnt / max * 100)}%"></div>
+                </div>
+            </div>
+            <span class="team-count">${t.cnt}</span>
+        </div>
+    `).join('');
+    }
+</script>
+{% endblock %}

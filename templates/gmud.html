@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title_suffix %} — GMUDs{% endblock %}
+{% block page_title %}Gestão de GMUDs{% endblock %}
+{% block page_subtitle %}Change Management — Changes request tracking{% endblock %}
+
+{% block content %}
+
+<!-- GMUD Title Generator -->
+<div class="generator-card">
+    <div class="generator-title">
+        ⚡ Gerador de Título de GMUD
+    </div>
+    <div class="generator-form">
+        <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <select class="form-input" id="genType">
+                <option value="Escopo Fechado">Escopo Fechado</option>
+                <option value="Rotineira - Escopo Fechado">Rotineira - Escopo Fechado</option>
+                <option value="Emergencial">Emergencial</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Versão PSU</label>
+            <select class="form-input" id="genPsu">
+                <option value="19.29">19.29</option>
+                <option value="19.28">19.28</option>
+                <option value="19.27">19.27</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Prioridade (opcional)</label>
+            <select class="form-input" id="genPriority">
+                <option value="">Nenhuma</option>
+                <option value="Prioridade PCI">Prioridade PCI</option>
+                <option value="Prioridade Alta">Prioridade Alta</option>
+            </select>
+        </div>
+        <div class="form-group full-width">
+            <label class="form-label">Hostname(s)</label>
+            <input type="text" class="form-input" id="genHostnames" placeholder="Ex: GNCASSPL05654 e GNCASNPL05655"
+                oninput="generateTitle()">
+        </div>
+        <div class="form-group full-width">
+            <label class="form-label">Título Gerado <small style="color: var(--text-dim)">(clique para
+                    copiar)</small></label>
+            <div class="generated-output" id="genOutput"
+                onclick="copyToClipboard(this.textContent.replace('📋 Clique para copiar', '').trim())">
+                <span class="copy-hint">📋 Clique para copiar</span>
+                Preencha os campos acima para gerar o título...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- GMUD Table -->
+<div class="table-container" style="animation-delay: 0.2s">
+    <div class="table-header">
+        <div class="table-title">GMUDs (<span id="gmudCount">—</span>)</div>
+        <div class="table-controls">
+            <!-- Botão NOVA GMUD (Adicionado na Fase 1) -->
+            <a href="/gmud/create" class="btn btn-primary"
+                style="padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                Nova GMUD
+            </a>
+            <div class="search-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input type="text" class="search-input" id="gmudSearch" placeholder="Buscar CHG, título, recurso..."
+                    oninput="debouncedGmudSearch()">
+            </div>
+            <select class="filter-select" id="gmudYearFilter" onchange="loadGmuds()">
+                <option value="">Todos os Anos</option>
+            </select>
+            <select class="filter-select" id="gmudMonthFilter" onchange="loadGmuds()">
+                <option value="">Todos os Meses</option>
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+            </select>
+            <select class="filter-select" id="gmudStatusFilter" onchange="loadGmuds()">
+                <option value="">Todos os Status</option>
+            </select>
+            <select class="filter-select" id="gmudAssigneeFilter" onchange="loadGmuds()">
+                <option value="">Todos os Recursos</option>
+            </select>
+        </div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>GMUD</th>
+                    <th>Título</th>
+                    <th>Status</th>
+                    <th>Entorno</th>
+                    <th>Tipo BD</th>
+                    <th>Data Início</th>
+                    <th>Data Término</th>
+                    <th>Designado a</th>
+                    <th>Observação</th>
+                </tr>
+            </thead>
+            <tbody id="gmudBody">
+                <tr>
+                    <td colspan="9" style="text-align:center;padding:40px">
+                        <div class="spinner" style="margin:auto"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div id="gmudPagination"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentGmudPage = 1;
+    const debouncedGmudSearch = debounce(() => { currentGmudPage = 1; loadGmuds(); });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadGmudFilters();
+        loadGmuds();
+
+        // Auto-generate on any change
+        ['genType', 'genPsu', 'genPriority'].forEach(id => {
+            document.getElementById(id).addEventListener('change', generateTitle);
+        });
+    });
+
+
+    async function loadGmudFilters() {
+        try {
+            const f = await API.filters();
+
+            const yearSel = document.getElementById('gmudYearFilter');
+            f.gmud_years.forEach(y => {
+                yearSel.innerHTML += `<option value="${y}">${y}</option>`;
+            });
+
+            const statusSel = document.getElementById('gmudStatusFilter');
+            f.gmud_statuses.forEach(s => {
+                statusSel.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+
+            const assigneeSel = document.getElementById('gmudAssigneeFilter');
+            f.gmud_assignees.forEach(a => {
+                assigneeSel.innerHTML += `<option value="${a}">${a}</option>`;
+            });
+        } catch (e) {
+            showToast('Erro ao carregar filtros', 'error');
+        }
+    }
+
+
+    async function loadGmuds(page) {
+        if (page) currentGmudPage = page;
+        const body = document.getElementById('gmudBody');
+        body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr>';
+
+        try {
+            const data = await API.gmuds({
+                year: document.getElementById('gmudYearFilter').value,
+                month: document.getElementById('gmudMonthFilter').value,
+                status: document.getElementById('gmudStatusFilter').value,
+                assigned_to: document.getElementById('gmudAssigneeFilter').value,
+                search: document.getElementById('gmudSearch').value,
+                page: currentGmudPage,
+                per_page: 50
+            });
+
+            document.getElementById('gmudCount').textContent = data.total.toLocaleString('pt-BR');
+
+            if (data.gmuds.length === 0) {
+                body.innerHTML = '<tr><td colspan="9"><div class="empty-state"><h3>Nenhuma GMUD encontrada</h3><p>Tente ajustar os filtros</p></div></td></tr>';
+                return;
+            }
+
+            body.innerHTML = data.gmuds.map(g => `
+            <tr>
+                <td style="font-family: monospace; font-weight: 600; color: var(--accent-primary)">${g.change_number || '—'}</td>
+                <td style="max-width: 350px; white-space: normal; line-height: 1.4">${g.title || '—'}</td>
+                <td>${getStatusBadge(g.status)}</td>
+                <td>${getEnvBadge(g.environment)}</td>
+                <td>${g.db_type || '—'}</td>
+                <td>${formatDateTime(g.start_date)}</td>
+                <td>${formatDateTime(g.end_date)}</td>
+                <td>${g.assigned_to || '—'}</td>
+                <td style="max-width: 200px">${g.observation || '—'}</td>
+            </tr>
+        `).join('');
+
+            document.getElementById('gmudPagination').innerHTML = createPagination(data, 'loadGmuds');
+        } catch (e) {
+            body.innerHTML = '<tr><td colspan="9"><div class="empty-state"><h3>Erro ao carregar</h3></div></td></tr>';
+            showToast('Erro: ' + e.message, 'error');
+        }
+    }
+
+
+    function generateTitle() {
+        const type = document.getElementById('genType').value;
+        const psu = document.getElementById('genPsu').value;
+        const priority = document.getElementById('genPriority').value;
+        const hostnames = document.getElementById('genHostnames').value.trim();
+
+        if (!hostnames) {
+            document.getElementById('genOutput').innerHTML =
+                '<span class="copy-hint">📋 Clique para copiar</span>Preencha os campos acima para gerar o título...';
+            return;
+        }
+
+        let prefix = `[${type} - BD`;
+        if (priority) prefix += ` - ${priority}`;
+        prefix += ']';
+
+        const title = `${prefix} Atualização PSU ${psu} conforme orientação Oracle | ${hostnames}`;
+        document.getElementById('genOutput').innerHTML =
+            `<span class="copy-hint">📋 Clique para copiar</span>${title}`;
+    }
+</script>
+{% endblock %}

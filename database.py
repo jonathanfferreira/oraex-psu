@@ -1,0 +1,701 @@
+"""
+ORAEX PSU Manager — Database Models & Queries (SQLite)
+"""
+import sqlite3
+import os
+from config import DATABASE_PATH
+
+
+def get_connection():
+    """Get a SQLite connection with row_factory."""
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
+    return conn
+
+
+def init_db():
+    """Create all tables if they don't exist."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # ── Servers (from "GetNet - Oracle Databases" sheet) ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS servers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            environment TEXT,
+            primary_hostname TEXT,
+            standby_hostname TEXT,
+            psu_version TEXT,
+            email_sent TEXT,
+            alignment TEXT,
+            ggs_version TEXT,
+            primary_contact TEXT,
+            responsible_team TEXT,
+            system_product TEXT,
+            application_day TEXT,
+            start_time TEXT,
+            end_time TEXT,
+            observation TEXT,
+            total_servers INTEGER DEFAULT 1,
+            has_standby INTEGER DEFAULT 0,
+            has_ggs INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ── CMDB Databases (from "GetNet CMDB - Databases" sheet) ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS cmdb_databases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            environment TEXT,
+            name TEXT,
+            contingency_name TEXT,
+            db_type TEXT,
+            db_version TEXT,
+            db_version_detail TEXT,
+            status TEXT,
+            application_day TEXT,
+            week_month TEXT,
+            start_time TEXT,
+            end_time TEXT,
+            system TEXT,
+            system_product TEXT,
+            type TEXT,
+            os TEXT,
+            primary_contact TEXT,
+            function TEXT,
+            description TEXT,
+            os_type TEXT,
+            responsible_team TEXT,
+            manager TEXT,
+            team_email TEXT,
+            validation_contact TEXT,
+            ip_address TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ── Monthly GMUDs (from month sheets like "FEVEREIRO-26") ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS gmuds (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            year INTEGER,
+            month INTEGER,
+            client TEXT,
+            db_type TEXT,
+            environment TEXT,
+            status TEXT,
+            day_of_week TEXT,
+            start_date TEXT,
+            end_date TEXT,
+            change_number TEXT,
+            title TEXT,
+            assigned_to TEXT,
+            observation TEXT,
+            vulnerability TEXT,
+            opened_by TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ── Planning (from "Planejamento oracle" sheet) ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS planning (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hostname TEXT,
+            contingency_name TEXT,
+            application_day TEXT,
+            week_month TEXT,
+            start_time TEXT,
+            end_time TEXT,
+            primary_contact TEXT,
+            db_version TEXT,
+            bank_version TEXT,
+            system TEXT,
+            system_product TEXT,
+            os TEXT,
+            function TEXT,
+            description TEXT,
+            responsible_team TEXT,
+            validation_contact TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ── PagoNxt Databases (from "PagoNxt - Databases" sheet) ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS pagonxt_databases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            environment TEXT,
+            name TEXT,
+            contingent TEXT,
+            psu_version TEXT,
+            contact TEXT,
+            zone TEXT,
+            product TEXT,
+            description TEXT,
+            channel TEXT,
+            service TEXT,
+            observation TEXT,
+            ip TEXT,
+            instance TEXT,
+            status TEXT,
+            os TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ── Import log ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS import_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            source_file TEXT,
+            sheets_imported TEXT,
+            total_records INTEGER,
+            status TEXT,
+            message TEXT
+        )
+    """)
+
+    # ── CMDB Full (from "CMDB Full GetBR" spreadsheet — only DB servers) ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS cmdb_full (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client TEXT,
+            hostname TEXT,
+            contingency TEXT,
+            db_type TEXT,
+            db_version TEXT,
+            status TEXT,
+            server_type TEXT,
+            environment TEXT,
+            os TEXT,
+            responsible_team TEXT,
+            manager TEXT,
+            primary_contact TEXT,
+            system_product TEXT,
+            function TEXT,
+            description TEXT,
+            validation_contact TEXT,
+            team_email TEXT,
+            shutdown_procedure TEXT,
+            affinity TEXT,
+            week_month TEXT,
+            application_day TEXT,
+            start_time TEXT,
+            end_time TEXT,
+            importance_level TEXT,
+            criticality TEXT,
+            scope_pci TEXT,
+            scope_sox TEXT,
+            scope_pagonxt TEXT,
+            ip_service TEXT,
+            ip_backup TEXT,
+            ip_branca TEXT,
+            zone TEXT,
+            country TEXT,
+            source_sheet TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ── Indexes for common queries ──
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_servers_env ON servers(environment)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_servers_psu ON servers(psu_version)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_gmuds_status ON gmuds(status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_gmuds_month ON gmuds(year, month)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_gmuds_assigned ON gmuds(assigned_to)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_env ON cmdb_databases(environment)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_type ON cmdb_databases(db_type)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_full_client ON cmdb_full(client)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_full_db ON cmdb_full(db_type)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_full_status ON cmdb_full(status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_full_env ON cmdb_full(environment)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_full_host ON cmdb_full(hostname)")
+
+    conn.commit()
+    conn.close()
+    print("✅ Database initialized successfully!")
+
+
+# ══════════════════════════════════════════════════════════
+#  QUERY FUNCTIONS
+# ══════════════════════════════════════════════════════════
+
+def get_dashboard_stats():
+    """Get KPI numbers for the dashboard."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    stats = {}
+
+    # Total Oracle servers (counting standby as separate servers)
+    c.execute("SELECT COALESCE(SUM(total_servers), 0) FROM servers")
+    stats["total_servers"] = c.fetchone()[0]
+
+    # Total rows (pairs)
+    c.execute("SELECT COUNT(*) FROM servers")
+    stats["total_rows"] = c.fetchone()[0]
+
+    # Servers with GGS
+    c.execute("SELECT COUNT(*) FROM servers WHERE has_ggs = 1")
+    stats["total_ggs"] = c.fetchone()[0]
+
+    # Standalone vs with standby
+    c.execute("SELECT COUNT(*) FROM servers WHERE has_standby = 1")
+    stats["with_standby"] = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) FROM servers WHERE has_standby = 0")
+    stats["standalone"] = c.fetchone()[0]
+
+    # By environment (using SUM for real server count)
+    c.execute("""
+        SELECT environment, SUM(total_servers) as cnt
+        FROM servers
+        GROUP BY environment
+        ORDER BY cnt DESC
+    """)
+    stats["servers_by_env"] = [dict(r) for r in c.fetchall()]
+
+    # By PSU version (using SUM for real server count)
+    c.execute("""
+        SELECT psu_version, SUM(total_servers) as cnt
+        FROM servers
+        WHERE psu_version IS NOT NULL AND psu_version != ''
+        GROUP BY psu_version
+        ORDER BY psu_version
+    """)
+    stats["servers_by_psu"] = [dict(r) for r in c.fetchall()]
+
+    # Total CMDB databases
+    c.execute("SELECT COUNT(*) FROM cmdb_databases")
+    stats["total_cmdb"] = c.fetchone()[0]
+
+    # Total CMDB Full (added for Phase 0 consistency)
+    c.execute("SELECT COUNT(*) FROM cmdb_full")
+    stats["total_cmdb_full"] = c.fetchone()[0]
+
+    # CMDB by type
+    c.execute("""
+        SELECT db_type, COUNT(*) as cnt
+        FROM cmdb_databases
+        WHERE db_type IS NOT NULL AND db_type != ''
+        GROUP BY db_type
+        ORDER BY cnt DESC
+    """)
+    stats["cmdb_by_type"] = [dict(r) for r in c.fetchall()]
+
+    # GMUDs stats
+    c.execute("SELECT COUNT(*) FROM gmuds")
+    stats["total_gmuds"] = c.fetchone()[0]
+
+    c.execute("""
+        SELECT status, COUNT(*) as cnt
+        FROM gmuds
+        WHERE status IS NOT NULL AND status != ''
+        GROUP BY status
+        ORDER BY cnt DESC
+    """)
+    stats["gmuds_by_status"] = [dict(r) for r in c.fetchall()]
+
+    # GMUDs by month
+    c.execute("""
+        SELECT year, month, COUNT(*) as cnt
+        FROM gmuds
+        GROUP BY year, month
+        ORDER BY year, month
+    """)
+    stats["gmuds_by_month"] = [dict(r) for r in c.fetchall()]
+
+    # GMUDs by assigned person
+    c.execute("""
+        SELECT assigned_to, COUNT(*) as cnt
+        FROM gmuds
+        WHERE assigned_to IS NOT NULL AND assigned_to != ''
+        GROUP BY assigned_to
+        ORDER BY cnt DESC
+    """)
+    stats["gmuds_by_person"] = [dict(r) for r in c.fetchall()]
+
+    # CMDB by environment
+    c.execute("""
+        SELECT environment, COUNT(*) as cnt
+        FROM cmdb_databases
+        WHERE environment IS NOT NULL AND environment != ''
+        GROUP BY environment
+        ORDER BY cnt DESC
+    """)
+    stats["cmdb_by_env"] = [dict(r) for r in c.fetchall()]
+
+    # CMDB by status
+    c.execute("""
+        SELECT status, COUNT(*) as cnt
+        FROM cmdb_databases
+        WHERE status IS NOT NULL AND status != ''
+        GROUP BY status
+        ORDER BY cnt DESC
+    """)
+    stats["cmdb_by_status"] = [dict(r) for r in c.fetchall()]
+
+    # Latest import
+    c.execute("SELECT * FROM import_log ORDER BY imported_at DESC LIMIT 1")
+    row = c.fetchone()
+    stats["last_import"] = dict(row) if row else None
+
+    conn.close()
+    return stats
+
+
+def get_servers(environment=None, psu_version=None, search=None, page=1, per_page=50):
+    """Get servers with optional filters and pagination."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    query = "SELECT * FROM servers WHERE 1=1"
+    count_query = "SELECT COUNT(*) FROM servers WHERE 1=1"
+    params = []
+
+    if environment:
+        query += " AND environment = ?"
+        count_query += " AND environment = ?"
+        params.append(environment)
+    if psu_version:
+        query += " AND psu_version = ?"
+        count_query += " AND psu_version = ?"
+        params.append(psu_version)
+    if search:
+        query += " AND (primary_hostname LIKE ? OR standby_hostname LIKE ? OR system_product LIKE ? OR responsible_team LIKE ?)"
+        count_query += " AND (primary_hostname LIKE ? OR standby_hostname LIKE ? OR system_product LIKE ? OR responsible_team LIKE ?)"
+        search_param = f"%{search}%"
+        params.extend([search_param] * 4)
+
+    c.execute(count_query, params)
+    total = c.fetchone()[0]
+
+    query += " ORDER BY environment, primary_hostname"
+    query += f" LIMIT {per_page} OFFSET {(page - 1) * per_page}"
+
+    c.execute(query, params)
+    servers = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+    return {"servers": servers, "total": total, "page": page, "per_page": per_page, "pages": (total + per_page - 1) // per_page}
+
+
+def get_gmuds(year=None, month=None, status=None, assigned_to=None, search=None, page=1, per_page=50):
+    """Get GMUDs with optional filters and pagination."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    query = "SELECT * FROM gmuds WHERE 1=1"
+    count_query = "SELECT COUNT(*) FROM gmuds WHERE 1=1"
+    params = []
+
+    if year:
+        query += " AND year = ?"
+        count_query += " AND year = ?"
+        params.append(year)
+    if month:
+        query += " AND month = ?"
+        count_query += " AND month = ?"
+        params.append(month)
+    if status:
+        query += " AND status = ?"
+        count_query += " AND status = ?"
+        params.append(status)
+    if assigned_to:
+        query += " AND assigned_to = ?"
+        count_query += " AND assigned_to = ?"
+        params.append(assigned_to)
+    if search:
+        query += " AND (change_number LIKE ? OR title LIKE ? OR assigned_to LIKE ?)"
+        count_query += " AND (change_number LIKE ? OR title LIKE ? OR assigned_to LIKE ?)"
+        search_param = f"%{search}%"
+        params.extend([search_param] * 3)
+
+    c.execute(count_query, params)
+    total = c.fetchone()[0]
+
+    query += " ORDER BY start_date DESC"
+    query += f" LIMIT {per_page} OFFSET {(page - 1) * per_page}"
+
+    c.execute(query, params)
+    gmuds = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+    return {"gmuds": gmuds, "total": total, "page": page, "per_page": per_page, "pages": (total + per_page - 1) // per_page}
+
+
+def get_cmdb_databases(environment=None, db_type=None, status=None, search=None, page=1, per_page=50):
+    """Get CMDB databases with optional filters."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    query = "SELECT * FROM cmdb_databases WHERE 1=1"
+    count_query = "SELECT COUNT(*) FROM cmdb_databases WHERE 1=1"
+    params = []
+
+    if environment:
+        query += " AND environment = ?"
+        count_query += " AND environment = ?"
+        params.append(environment)
+    if db_type:
+        query += " AND db_type = ?"
+        count_query += " AND db_type = ?"
+        params.append(db_type)
+    if status:
+        query += " AND status = ?"
+        count_query += " AND status = ?"
+        params.append(status)
+    if search:
+        query += " AND (name LIKE ? OR contingency_name LIKE ? OR system_product LIKE ? OR responsible_team LIKE ?)"
+        count_query += " AND (name LIKE ? OR contingency_name LIKE ? OR system_product LIKE ? OR responsible_team LIKE ?)"
+        search_param = f"%{search}%"
+        params.extend([search_param] * 4)
+
+    c.execute(count_query, params)
+    total = c.fetchone()[0]
+
+    query += " ORDER BY environment, name"
+    query += f" LIMIT {per_page} OFFSET {(page - 1) * per_page}"
+
+    c.execute(query, params)
+    databases = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+    return {"databases": databases, "total": total, "page": page, "per_page": per_page, "pages": (total + per_page - 1) // per_page}
+
+
+def get_filter_options():
+    """Get unique values for filter dropdowns."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    options = {}
+
+    c.execute("SELECT DISTINCT environment FROM servers WHERE environment IS NOT NULL AND environment != '' ORDER BY environment")
+    options["server_environments"] = [r[0] for r in c.fetchall()]
+
+    c.execute("SELECT DISTINCT psu_version FROM servers WHERE psu_version IS NOT NULL AND psu_version != '' ORDER BY psu_version")
+    options["psu_versions"] = [r[0] for r in c.fetchall()]
+
+    c.execute("SELECT DISTINCT status FROM gmuds WHERE status IS NOT NULL AND status != '' ORDER BY status")
+    options["gmud_statuses"] = [r[0] for r in c.fetchall()]
+
+    c.execute("SELECT DISTINCT assigned_to FROM gmuds WHERE assigned_to IS NOT NULL AND assigned_to != '' ORDER BY assigned_to")
+    options["gmud_assignees"] = [r[0] for r in c.fetchall()]
+
+    c.execute("SELECT DISTINCT year FROM gmuds ORDER BY year")
+    options["gmud_years"] = [r[0] for r in c.fetchall()]
+
+    c.execute("SELECT DISTINCT environment FROM cmdb_databases WHERE environment IS NOT NULL AND environment != '' ORDER BY environment")
+    options["cmdb_environments"] = [r[0] for r in c.fetchall()]
+
+    c.execute("SELECT DISTINCT db_type FROM cmdb_databases WHERE db_type IS NOT NULL AND db_type != '' ORDER BY db_type")
+    options["cmdb_db_types"] = [r[0] for r in c.fetchall()]
+
+    conn.close()
+    return options
+
+
+def get_planning_data():
+    """Get all planning entries."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM planning ORDER BY hostname")
+    data = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return data
+
+
+def get_pagonxt_databases(search=None, page=1, per_page=50):
+    """Get PagoNxt databases with optional search and pagination."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    query = "SELECT * FROM pagonxt_databases WHERE 1=1"
+    count_query = "SELECT COUNT(*) FROM pagonxt_databases WHERE 1=1"
+    params = []
+
+    if search:
+        query += " AND (name LIKE ? OR product LIKE ? OR description LIKE ? OR ip LIKE ?)"
+        count_query += " AND (name LIKE ? OR product LIKE ? OR description LIKE ? OR ip LIKE ?)"
+        search_param = f"%{search}%"
+        params.extend([search_param] * 4)
+
+    c.execute(count_query, params)
+    total = c.fetchone()[0]
+
+    query += " ORDER BY environment, name"
+    query += " LIMIT ? OFFSET ?"
+
+    c.execute(query, params + [per_page, (page - 1) * per_page])
+    databases = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+    return {
+        "databases": databases,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "pages": (total + per_page - 1) // per_page
+    }
+
+
+def get_cmdb_full(client=None, db_type=None, status=None, environment=None,
+                  search=None, page=1, per_page=50):
+    """Get CMDB Full database servers with filters and pagination."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    where = []
+    params = []
+
+    if client:
+        where.append("client = ?")
+        params.append(client)
+    if db_type:
+        where.append("db_type = ?")
+        params.append(db_type)
+    if status:
+        where.append("status = ?")
+        params.append(status)
+    if environment:
+        where.append("environment = ?")
+        params.append(environment)
+    if search:
+        where.append("(hostname LIKE ? OR contingency LIKE ? OR system_product LIKE ? OR description LIKE ?)")
+        s = f"%{search}%"
+        params.extend([s, s, s, s])
+
+    where_clause = " WHERE " + " AND ".join(where) if where else ""
+
+    c.execute(f"SELECT COUNT(*) FROM cmdb_full{where_clause}", params)
+    total = c.fetchone()[0]
+
+    c.execute(f"""
+        SELECT * FROM cmdb_full{where_clause}
+        ORDER BY client, environment, hostname
+        LIMIT ? OFFSET ?
+    """, params + [per_page, (page - 1) * per_page])
+    rows = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+    return {
+        "data": rows,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "pages": (total + per_page - 1) // per_page
+    }
+
+
+def get_cmdb_full_stats(client=None):
+    """Get statistics for the CMDB Full viewer page."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    stats = {}
+    client_filter = ""
+    params = []
+    if client:
+        client_filter = " WHERE client = ?"
+        params = [client]
+
+    # Total DB servers
+    c.execute(f"SELECT COUNT(*) FROM cmdb_full{client_filter}", params)
+    stats["total"] = c.fetchone()[0]
+
+    # Active count
+    active_filter = f"{client_filter} {'AND' if client else 'WHERE'} status IN ('Ativo', 'Running')"
+    c.execute(f"SELECT COUNT(*) FROM cmdb_full{active_filter}", params)
+    stats["active"] = c.fetchone()[0]
+
+    # By client
+    c.execute("""
+        SELECT client, COUNT(*) as cnt
+        FROM cmdb_full
+        GROUP BY client
+        ORDER BY cnt DESC
+    """)
+    stats["by_client"] = [dict(r) for r in c.fetchall()]
+
+    # By DB type
+    db_type_sql = """
+        SELECT db_type, COUNT(*) as cnt
+        FROM cmdb_full
+        WHERE db_type IS NOT NULL AND db_type != ''
+    """
+    if client:
+        db_type_sql += " AND client = ?"
+    db_type_sql += " GROUP BY db_type ORDER BY cnt DESC"
+    c.execute(db_type_sql, params)
+    stats["by_db_type"] = [dict(r) for r in c.fetchall()]
+
+    # By environment
+    c.execute(f"""
+        SELECT environment, COUNT(*) as cnt
+        FROM cmdb_full{client_filter}
+        GROUP BY environment
+        ORDER BY cnt DESC
+    """, params)
+    stats["by_environment"] = [dict(r) for r in c.fetchall()]
+
+    # By status
+    c.execute(f"""
+        SELECT status, COUNT(*) as cnt
+        FROM cmdb_full{client_filter}
+        GROUP BY status
+        ORDER BY cnt DESC
+    """, params)
+    stats["by_status"] = [dict(r) for r in c.fetchall()]
+
+    # By DB type per environment (for heatmap)
+    c.execute(f"""
+        SELECT db_type, environment, COUNT(*) as cnt
+        FROM cmdb_full{client_filter}
+        GROUP BY db_type, environment
+        ORDER BY db_type, environment
+    """, params)
+    stats["db_by_env"] = [dict(r) for r in c.fetchall()]
+
+    # By client + DB type (cross-tab)
+    c.execute("""
+        SELECT client, db_type, COUNT(*) as cnt
+        FROM cmdb_full
+        GROUP BY client, db_type
+        ORDER BY client, cnt DESC
+    """)
+    stats["client_db_type"] = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+    return stats
+
+
+def get_cmdb_full_filters():
+    """Get unique filter values for CMDB Full page."""
+    conn = get_connection()
+    c = conn.cursor()
+    options = {}
+
+    c.execute("SELECT DISTINCT client FROM cmdb_full WHERE client IS NOT NULL ORDER BY client")
+    options["clients"] = [r[0] for r in c.fetchall()]
+
+    c.execute("SELECT DISTINCT db_type FROM cmdb_full WHERE db_type IS NOT NULL AND db_type != '' ORDER BY db_type")
+    options["db_types"] = [r[0] for r in c.fetchall()]
+
+    c.execute("SELECT DISTINCT status FROM cmdb_full WHERE status IS NOT NULL AND status != '' ORDER BY status")
+    options["statuses"] = [r[0] for r in c.fetchall()]
+
+    c.execute("SELECT DISTINCT environment FROM cmdb_full WHERE environment IS NOT NULL AND environment != '' ORDER BY environment")
+    options["environments"] = [r[0] for r in c.fetchall()]
+
+    conn.close()
+    return options
+
+
+if __name__ == "__main__":
+    init_db()

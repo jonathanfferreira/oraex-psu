@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+
+# Database
+oraex.db
+
+# Excel Data (Do not commit sensitive data)
+*.xlsm
+*.xlsx
+*.xls
+~$*.xlsm
+~$*.xlsx
+
+# Backups
+backups/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+nul

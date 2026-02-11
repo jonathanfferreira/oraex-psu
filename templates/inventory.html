@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+{% block title_suffix %} — Inventário{% endblock %}
+{% block page_title %}Inventário de Servidores{% endblock %}
+{% block page_subtitle %}Servidores Oracle & CMDB Databases — Getnet / PagoNxt{% endblock %}
+
+{% block content %}
+
+<!-- Tabs -->
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('oracle')">🖥️ Oracle Servers</button>
+    <button class="tab-btn" onclick="switchTab('cmdb')">🗄️ CMDB Databases</button>
+    <button class="tab-btn" onclick="switchTab('pagonxt')">🌐 PagoNxt</button>
+</div>
+
+<!-- Oracle Servers Tab -->
+<div class="tab-content active" id="tab-oracle">
+    <div class="table-container">
+        <div class="table-header">
+            <div class="table-title">Servidores Oracle (<span id="oracleCount">—</span>)</div>
+            <div class="table-controls">
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="M21 21l-4.35-4.35" />
+                    </svg>
+                    <input type="text" class="search-input" id="oracleSearch" placeholder="Buscar hostname, sistema..."
+                        oninput="debouncedOracleSearch()">
+                </div>
+                <select class="filter-select" id="oracleEnvFilter" onchange="loadOracle()">
+                    <option value="">Todos os Entornos</option>
+                </select>
+                <select class="filter-select" id="oraclePsuFilter" onchange="loadOracle()">
+                    <option value="">Todas as Versões PSU</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Entorno</th>
+                        <th>Primary Hostname</th>
+                        <th>Standby Hostname</th>
+                        <th>Versão PSU</th>
+                        <th>Sistema/Produto</th>
+                        <th>Equipe</th>
+                        <th>Contato</th>
+                        <th>Horário</th>
+                        <th>Observação</th>
+                    </tr>
+                </thead>
+                <tbody id="oracleBody">
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <div class="spinner"></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="oraclePagination"></div>
+    </div>
+</div>
+
+<!-- CMDB Tab -->
+<div class="tab-content" id="tab-cmdb">
+    <div class="table-container">
+        <div class="table-header">
+            <div class="table-title">CMDB Databases (<span id="cmdbCount">—</span>)</div>
+            <div class="table-controls">
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="M21 21l-4.35-4.35" />
+                    </svg>
+                    <input type="text" class="search-input" id="cmdbSearch" placeholder="Buscar nome, sistema..."
+                        oninput="debouncedCmdbSearch()">
+                </div>
+                <select class="filter-select" id="cmdbEnvFilter" onchange="loadCmdb()">
+                    <option value="">Todos os Entornos</option>
+                </select>
+                <select class="filter-select" id="cmdbTypeFilter" onchange="loadCmdb()">
+                    <option value="">Todos os Tipos</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Entorno</th>
+                        <th>Nome</th>
+                        <th>Contingência</th>
+                        <th>Tipo</th>
+                        <th>Versão</th>
+                        <th>Situação</th>
+                        <th>Sistema/Produto</th>
+                        <th>Equipe</th>
+                    </tr>
+                </thead>
+                <tbody id="cmdbBody">
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <div class="spinner"></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="cmdbPagination"></div>
+    </div>
+</div>
+
+<!-- PagoNxt Tab -->
+<div class="tab-content" id="tab-pagonxt">
+    <div class="table-container">
+        <div class="table-header">
+            <div class="table-title">PagoNxt Databases</div>
+            <div class="table-controls">
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="M21 21l-4.35-4.35" />
+                    </svg>
+                    <input type="text" class="search-input" id="pagonxtSearch" placeholder="Buscar..."
+                        oninput="debouncedPagonxtSearch()">
+                </div>
+            </div>
+        </div>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Entorno</th>
+                        <th>Nome</th>
+                        <th>Produto</th>
+                        <th>Descrição</th>
+                        <th>Canal</th>
+                        <th>Status</th>
+                        <th>IP</th>
+                        <th>SO</th>
+                    </tr>
+                </thead>
+                <tbody id="pagonxtBody">
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <div class="spinner"></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="pagonxtPagination"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentOraclePage = 1;
+    let currentCmdbPage = 1;
+    let currentPagonxtPage = 1;
+
+    const debouncedOracleSearch = debounce(() => { currentOraclePage = 1; loadOracle(); });
+    const debouncedCmdbSearch = debounce(() => { currentCmdbPage = 1; loadCmdb(); });
+    const debouncedPagonxtSearch = debounce(() => { currentPagonxtPage = 1; loadPagonxt(); });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadFilters();
+        loadOracle();
+        loadCmdb();
+        loadPagonxt();
+    });
+
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById(`tab-${tab}`).classList.add('active');
+    }
+
+
+    async function loadFilters() {
+        try {
+            const f = await API.filters();
+
+            const oracleEnv = document.getElementById('oracleEnvFilter');
+            f.server_environments.forEach(e => {
+                oracleEnv.innerHTML += `<option value="${e}">${e}</option>`;
+            });
+
+            const oraclePsu = document.getElementById('oraclePsuFilter');
+            f.psu_versions.forEach(v => {
+                oraclePsu.innerHTML += `<option value="${v}">${v}</option>`;
+            });
+
+            const cmdbEnv = document.getElementById('cmdbEnvFilter');
+            f.cmdb_environments.forEach(e => {
+                cmdbEnv.innerHTML += `<option value="${e}">${e}</option>`;
+            });
+
+            const cmdbType = document.getElementById('cmdbTypeFilter');
+            f.cmdb_db_types.forEach(t => {
+                cmdbType.innerHTML += `<option value="${t}">${t}</option>`;
+            });
+        } catch (e) {
+            showToast('Erro ao carregar filtros', 'error');
+        }
+    }
+
+
+    async function loadOracle(page) {
+        if (page) currentOraclePage = page;
+        const body = document.getElementById('oracleBody');
+        body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr>';
+
+        try {
+            const data = await API.servers({
+                environment: document.getElementById('oracleEnvFilter').value,
+                psu_version: document.getElementById('oraclePsuFilter').value,
+                search: document.getElementById('oracleSearch').value,
+                page: currentOraclePage,
+                per_page: 50
+            });
+
+            document.getElementById('oracleCount').textContent = data.total.toLocaleString('pt-BR');
+
+            if (data.servers.length === 0) {
+                body.innerHTML = '<tr><td colspan="8"><div class="empty-state"><h3>Nenhum servidor encontrado</h3><p>Tente ajustar os filtros</p></div></td></tr>';
+                return;
+            }
+
+            // Renderiza as linhas da tabela
+            body.innerHTML = data.servers.map(s => {
+                let clientBadge = '';
+                const host = (s.primary_hostname || '').toLowerCase();
+                if (host.startsWith('gncas')) {
+                    clientBadge = '<span class="status-badge" style="background:rgba(0,136,238,0.2);color:#0088ee;font-size:0.75rem;margin-right:6px;padding:2px 6px">GetNet</span>';
+                } else if (host.startsWith('gms')) {
+                    clientBadge = '<span class="status-badge" style="background:rgba(255,68,68,0.2);color:#ff4444;font-size:0.75rem;margin-right:6px;padding:2px 6px">PagoNxt</span>';
+                }
+
+                return `
+            <tr>
+                <td>${getEnvBadge(s.environment)}</td>
+                <td class="hostname" style="display:flex;align-items:center">${clientBadge}${s.primary_hostname || '—'}</td>
+                <td class="hostname">${s.standby_hostname || '—'}</td>
+                <td>${getPsuBadge(s.psu_version)}</td>
+                <td>${s.system_product || '—'}</td>
+                <td>${s.responsible_team || '—'}</td>
+                <td>${s.primary_contact || '—'}</td>
+                <td>${s.start_time && s.end_time ? s.start_time + ' — ' + s.end_time : '—'}</td>
+                <td class="truncate" title="${s.observation || ''}">${s.observation || '—'}</td>
+            </tr>
+            `;
+            }).join('');
+
+            document.getElementById('oraclePagination').innerHTML = createPagination(data, 'loadOracle');
+        } catch (e) {
+            body.innerHTML = '<tr><td colspan="9"><div class="empty-state"><h3>Erro ao carregar</h3></div></td></tr>';
+            showToast('Erro: ' + e.message, 'error');
+        }
+    }
+
+
+    async function loadCmdb(page) {
+        if (page) currentCmdbPage = page;
+        const body = document.getElementById('cmdbBody');
+        body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr>';
+
+        try {
+            const data = await API.cmdb({
+                environment: document.getElementById('cmdbEnvFilter').value,
+                db_type: document.getElementById('cmdbTypeFilter').value,
+                search: document.getElementById('cmdbSearch').value,
+                page: currentCmdbPage,
+                per_page: 50
+            });
+
+            document.getElementById('cmdbCount').textContent = data.total.toLocaleString('pt-BR');
+
+            if (data.databases.length === 0) {
+                body.innerHTML = '<tr><td colspan="8"><div class="empty-state"><h3>Nenhum banco encontrado</h3></div></td></tr>';
+                return;
+            }
+
+            body.innerHTML = data.databases.map(d => `
+            <tr>
+                <td>${getEnvBadge(d.environment)}</td>
+                <td class="hostname">${d.name || '—'}</td>
+                <td class="hostname">${d.contingency_name || '—'}</td>
+                <td>${d.db_type || '—'}</td>
+                <td>${d.db_version || '—'}</td>
+                <td>${getStatusBadge(d.status)}</td>
+                <td>${d.system_product || '—'}</td>
+                <td>${d.responsible_team || '—'}</td>
+            </tr>
+        `).join('');
+
+            document.getElementById('cmdbPagination').innerHTML = createPagination(data, 'loadCmdb');
+        } catch (e) {
+            body.innerHTML = '<tr><td colspan="8"><div class="empty-state"><h3>Erro ao carregar</h3></div></td></tr>';
+        }
+    }
+
+
+    async function loadPagonxt(page) {
+        if (page) currentPagonxtPage = page;
+        const body = document.getElementById('pagonxtBody');
+        body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr>';
+
+        try {
+            const params = new URLSearchParams({
+                search: document.getElementById('pagonxtSearch').value,
+                page: currentPagonxtPage,
+                per_page: 50
+            });
+            const resp = await fetch('/api/pagonxt?' + params);
+            const data = await resp.json();
+
+            if (data.databases.length === 0) {
+                body.innerHTML = '<tr><td colspan="8"><div class="empty-state"><h3>Nenhum banco PagoNxt encontrado</h3></div></td></tr>';
+                return;
+            }
+
+            body.innerHTML = data.databases.map(p => `
+            <tr>
+                <td>${getEnvBadge(p.environment)}</td>
+                <td class="hostname">${p.name || '—'}</td>
+                <td>${p.product || '—'}</td>
+                <td>${p.description || '—'}</td>
+                <td>${p.channel || '—'}</td>
+                <td>${getStatusBadge(p.status)}</td>
+                <td class="hostname">${p.ip || '—'}</td>
+                <td>${p.os || '—'}</td>
+            </tr>
+        `).join('');
+
+            document.getElementById('pagonxtPagination').innerHTML = createPagination(data, 'loadPagonxt');
+        } catch (e) {
+            body.innerHTML = '<tr><td colspan="8"><div class="empty-state"><h3>Erro ao carregar</h3></div></td></tr>';
+        }
+    }
+</script>
+{% endblock %}

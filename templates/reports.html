@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+{% block title_suffix %} — Relatórios{% endblock %}
+{% block page_title %}Relatórios & Analytics{% endblock %}
+{% block page_subtitle %}Métricas consolidadas para apresentação executiva{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- Summary Stats Row -->
+<div class="stats-row" id="statsRow">
+    <div class="stat-mini">
+        <div class="stat-value" id="statServers" style="color: var(--accent-primary)">—</div>
+        <div class="stat-label">Servidores Oracle</div>
+    </div>
+    <div class="stat-mini">
+        <div class="stat-value" id="statCmdb" style="color: var(--accent-secondary)">—</div>
+        <div class="stat-label">CMDB Total</div>
+    </div>
+    <div class="stat-mini">
+        <div class="stat-value" id="statGmuds" style="color: var(--warning)">—</div>
+        <div class="stat-label">GMUDs Realizadas</div>
+    </div>
+    <div class="stat-mini">
+        <div class="stat-value" id="statUpdated" style="color: var(--success)">—</div>
+        <div class="stat-label">% Atualizado</div>
+    </div>
+    <div class="stat-mini">
+        <div class="stat-value" id="statPending" style="color: var(--danger)">—</div>
+        <div class="stat-label">Pendentes</div>
+    </div>
+    <div class="stat-mini">
+        <div class="stat-value" id="statTechs" style="color: var(--info)">—</div>
+        <div class="stat-label">Tecnologias</div>
+    </div>
+</div>
+
+<!-- PSU Progress -->
+<div class="chart-card full-width" style="animation-delay: 0.15s; margin-bottom: 20px">
+    <div class="chart-header">
+        <div>
+            <div class="chart-title">🎯 Progresso de Atualização PSU</div>
+            <div class="chart-subtitle">Percentual de servidores atualizados por versão</div>
+        </div>
+    </div>
+    <div id="psuProgress" style="padding: 10px 0"></div>
+</div>
+
+<!-- Charts -->
+<div class="charts-grid">
+    <div class="chart-card" style="animation-delay: 0.2s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">📈 Evolução de GMUDs por Mês</div>
+                <div class="chart-subtitle">Tendência de execução de changes</div>
+            </div>
+        </div>
+        <div class="chart-body">
+            <canvas id="reportMonthly"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card" style="animation-delay: 0.25s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">🌍 Servidores por Entorno x PSU</div>
+                <div class="chart-subtitle">Ambiente vs versão de patch</div>
+            </div>
+        </div>
+        <div class="chart-body">
+            <canvas id="reportEnvPsu"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="charts-grid">
+    <div class="chart-card" style="animation-delay: 0.3s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">🗄️ CMDB por Situação</div>
+                <div class="chart-subtitle">Status dos bancos de dados no inventário</div>
+            </div>
+        </div>
+        <div class="chart-body">
+            <canvas id="reportCmdbStatus"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card" style="animation-delay: 0.35s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">👥 Performance da Equipe</div>
+                <div class="chart-subtitle">GMUDs executadas por recurso</div>
+            </div>
+        </div>
+        <div class="chart-body">
+            <canvas id="reportTeam"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="charts-grid">
+    <div class="chart-card full-width" style="animation-delay: 0.4s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">📊 CMDB — Distribuição por Entorno e Tecnologia</div>
+                <div class="chart-subtitle">Visão consolidada de todos os bancos de dados</div>
+            </div>
+        </div>
+        <div class="chart-body" style="min-height: 300px">
+            <canvas id="reportCmdbEnv"></canvas>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        applyChartDefaults();
+
+        try {
+            const data = await API.dashboard();
+            renderStats(data);
+            renderPsuProgress(data);
+            renderMonthlyReport(data);
+            renderEnvPsuChart(data);
+            renderCmdbStatusChart(data);
+            renderTeamChart(data);
+            renderCmdbEnvChart(data);
+        } catch (e) {
+            showToast('Erro ao carregar relatórios: ' + e.message, 'error');
+        }
+    });
+
+
+    function renderStats(data) {
+        animateValue(document.getElementById('statServers'), 0, data.total_servers);
+        animateValue(document.getElementById('statCmdb'), 0, data.total_cmdb);
+        animateValue(document.getElementById('statGmuds'), 0, data.total_gmuds);
+
+        const updated = data.servers_by_psu
+            .filter(s => s.psu_version && (s.psu_version.includes('19.29') || s.psu_version.includes('19.28')))
+            .reduce((sum, s) => sum + s.cnt, 0);
+        const pct = data.total_servers > 0 ? Math.round(updated / data.total_servers * 100) : 0;
+        document.getElementById('statUpdated').textContent = pct + '%';
+
+        const pending = data.servers_by_psu
+            .filter(s => s.psu_version && !s.psu_version.includes('19.29') && !s.psu_version.includes('19.28'))
+            .reduce((sum, s) => sum + s.cnt, 0);
+        animateValue(document.getElementById('statPending'), 0, pending);
+
+        const techs = data.cmdb_by_type.length;
+        document.getElementById('statTechs').textContent = techs;
+    }
+
+
+    function renderPsuProgress(data) {
+        const container = document.getElementById('psuProgress');
+        const total = data.total_servers || 1;
+        const sorted = [...data.servers_by_psu]
+            .filter(s => s.psu_version && s.psu_version.trim())
+            .sort((a, b) => b.cnt - a.cnt);
+
+        const colors = {
+            '19.29': 'var(--success)',
+            '19.28': '#10b981',
+            '19.27': 'var(--warning)',
+            '19.26': '#f59e0b',
+            '19.25': '#f97316',
+            '19.24': 'var(--danger)',
+            '19.23': 'var(--danger)',
+            '19.20': 'var(--danger)',
+            '12.0': '#ef4444',
+        };
+
+        container.innerHTML = sorted.map(s => {
+            const pct = Math.round(s.cnt / total * 100);
+            const color = Object.entries(colors).find(([k]) => s.psu_version.includes(k));
+            const barColor = color ? color[1] : 'var(--accent-primary)';
+            return `
+            <div style="display:flex;align-items:center;gap:14px;padding:6px 0;border-bottom:1px solid var(--border-subtle)">
+                <span style="min-width:80px;font-family:monospace;font-weight:600;font-size:0.85rem;color:var(--text-primary)">${s.psu_version}</span>
+                <div class="progress-bar" style="flex:1">
+                    <div class="progress-fill" style="width:${pct}%;background:${barColor}"></div>
+                </div>
+                <span style="min-width:40px;text-align:right;font-weight:700;font-size:0.85rem;color:var(--text-primary)">${s.cnt}</span>
+                <span style="min-width:40px;text-align:right;font-size:0.75rem;color:var(--text-muted)">${pct}%</span>
+            </div>
+        `;
+        }).join('');
+    }
+
+
+    function renderMonthlyReport(data) {
+        const ctx = document.getElementById('reportMonthly').getContext('2d');
+        const months = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const sorted = data.gmuds_by_month.sort((a, b) => a.year * 100 + a.month - (b.year * 100 + b.month));
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: sorted.map(m => `${months[m.month]}/${m.year.toString().slice(-2)}`),
+                datasets: [{
+                    label: 'GMUDs',
+                    data: sorted.map(m => m.cnt),
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#6366f1',
+                    pointBorderColor: 'rgba(10, 10, 26, 0.8)',
+                    pointBorderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+
+    function renderEnvPsuChart(data) {
+        const ctx = document.getElementById('reportEnvPsu').getContext('2d');
+        const envData = data.servers_by_env.filter(e => e.environment && e.environment.trim());
+        const envColors = {
+            'Produção': '#ef4444',
+            'Homologação': '#f59e0b',
+            'Desenvolvimento': '#3b82f6',
+            'Transacional': '#a855f7',
+        };
+
+        new Chart(ctx, {
+            type: 'polarArea',
+            data: {
+                labels: envData.map(e => e.environment),
+                datasets: [{
+                    data: envData.map(e => e.cnt),
+                    backgroundColor: envData.map(e =>
+                        (envColors[e.environment] || '#6366f1') + '40'
+                    ),
+                    borderColor: envData.map(e =>
+                        envColors[e.environment] || '#6366f1'
+                    ),
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { padding: 12 }
+                    }
+                }
+            }
+        });
+    }
+
+
+    function renderCmdbStatusChart(data) {
+        const ctx = document.getElementById('reportCmdbStatus').getContext('2d');
+        const statusData = data.cmdb_by_status.filter(s => s.status && s.status.trim());
+
+        const statusColors = {
+            'Ativo': '#10b981',
+            'Sendo descontinuado': '#f59e0b',
+            'Em Construção': '#3b82f6',
+            'Em Elaboração': '#a855f7',
+        };
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: statusData.map(s => s.status),
+                datasets: [{
+                    data: statusData.map(s => s.cnt),
+                    backgroundColor: statusData.map(s => statusColors[s.status] || '#6366f1'),
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { padding: 12, font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+
+
+    function renderTeamChart(data) {
+        const ctx = document.getElementById('reportTeam').getContext('2d');
+        const team = data.gmuds_by_person
+            .filter(t => t.assigned_to && t.assigned_to.trim())
+            .slice(0, 8);
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: team.map(t => {
+                    const name = t.assigned_to;
+                    return name.length > 18 ? name.slice(0, 18) + '…' : name;
+                }),
+                datasets: [{
+                    label: 'GMUDs',
+                    data: team.map(t => t.cnt),
+                    backgroundColor: CHART_COLORS.palette.slice(0, team.length),
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barPercentage: 0.6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+
+    function renderCmdbEnvChart(data) {
+        const ctx = document.getElementById('reportCmdbEnv').getContext('2d');
+        const envData = data.cmdb_by_env.filter(e => e.environment && e.environment.trim());
+
+        const envColors = {
+            'Produção': '#ef4444',
+            'Homologação': '#f59e0b',
+            'Desenvolvimento': '#3b82f6',
+            'Transacional': '#a855f7',
+            'White': '#6b7280',
+        };
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: envData.map(e => e.environment),
+                datasets: [{
+                    label: 'Bancos de Dados',
+                    data: envData.map(e => e.cnt),
+                    backgroundColor: envData.map(e =>
+                        (envColors[e.environment] || '#6366f1') + '99'
+                    ),
+                    borderColor: envData.map(e =>
+                        envColors[e.environment] || '#6366f1'
+                    ),
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barPercentage: 0.5,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

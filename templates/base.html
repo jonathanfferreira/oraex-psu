@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORAEX PSU Manager{% block title_suffix %}{% endblock %}</title>
+    <meta name="description" content="ORAEX PSU Manager — Gestão de PSU Oracle para Getnet/PagoNxt">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo-oraex-azul.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <img src="{{ url_for('static', filename='img/logo-oraex-azul.png') }}" alt="ORAEX"
+                        style="width: 32px; height: 32px; object-fit: contain; border-radius: 6px;">
+                </div>
+                <div class="logo-text">
+                    <span class="logo-name">ORAEX</span>
+                    <span class="logo-sub">PSU Manager</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-nav">
+            <a href="/" class="nav-item {% if active == 'dashboard' %}active{% endif %}" data-tooltip="Dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="/inventory" class="nav-item {% if active == 'inventory' %}active{% endif %}"
+                data-tooltip="Inventário">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="18" rx="2" />
+                    <path d="M2 8h20M8 8v13" />
+                </svg>
+                <span>Inventário</span>
+            </a>
+            <a href="/gmud" class="nav-item {% if active == 'gmud' %}active{% endif %}" data-tooltip="GMUDs">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+                    <rect x="9" y="3" width="6" height="4" rx="1" />
+                    <path d="M9 12h6M9 16h4" />
+                </svg>
+                <span>GMUDs</span>
+            </a>
+            <a href="/cmdb-full" class="nav-item {% if active == 'cmdb_full' %}active{% endif %}"
+                data-tooltip="CMDB Full">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                <span>CMDB Full</span>
+            </a>
+            <a href="/reports" class="nav-item {% if active == 'reports' %}active{% endif %}" data-tooltip="Relatórios">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 20V10M12 20V4M6 20v-6" />
+                </svg>
+                <span>Relatórios</span>
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="nav-item import-btn" id="importBtn" onclick="triggerImport()"
+                data-tooltip="Re-importar Planilha">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                <span>Importar</span>
+            </button>
+            <div class="import-status" id="importStatus"></div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="page-header">
+            <div class="header-left">
+                <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                <p class="page-subtitle">{% block page_subtitle %}Visão geral do ambiente Oracle{% endblock %}</p>
+            </div>
+            <div class="header-right">
+                <div class="last-update" id="lastUpdate">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 6v6l4 2" />
+                    </svg>
+                    <span>Carregando...</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-area">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Toast notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>
