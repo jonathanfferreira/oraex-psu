@@ -288,6 +288,21 @@ function debounce(fn, delay = 300) {
 
 
 // ══════════════════════════════════════════════════════════
+//  CSV EXPORT
+// ══════════════════════════════════════════════════════════
+
+function exportCSV(apiUrl, params = {}) {
+    const filtered = {};
+    for (const [k, v] of Object.entries(params)) {
+        if (v !== '' && v !== null && v !== undefined) filtered[k] = v;
+    }
+    const queryString = new URLSearchParams(filtered).toString();
+    const url = queryString ? `${apiUrl}?${queryString}` : apiUrl;
+    window.open(url, '_blank');
+}
+
+
+// ══════════════════════════════════════════════════════════
 //  COPY TO CLIPBOARD
 // ══════════════════════════════════════════════════════════
 

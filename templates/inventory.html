@@ -32,6 +32,14 @@
                 <select class="filter-select" id="oraclePsuFilter" onchange="loadOracle()">
                     <option value="">Todas as Versões PSU</option>
                 </select>
+                <button class="btn btn-secondary" style="padding:8px 14px;font-size:0.82rem;display:flex;align-items:center;gap:6px" onclick="exportCSV('/api/servers/export', {
+                    environment: document.getElementById('oracleEnvFilter').value,
+                    psu_version: document.getElementById('oraclePsuFilter').value,
+                    search: document.getElementById('oracleSearch').value
+                })">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    CSV
+                </button>
             </div>
         </div>
         <div class="table-scroll">

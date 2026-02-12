@@ -65,6 +65,16 @@
                 </svg>
                 Nova GMUD
             </a>
+            <button class="btn btn-secondary" style="padding:8px 14px;font-size:0.82rem;display:flex;align-items:center;gap:6px" onclick="exportCSV('/api/gmuds/export', {
+                year: document.getElementById('gmudYearFilter').value,
+                month: document.getElementById('gmudMonthFilter').value,
+                status: document.getElementById('gmudStatusFilter').value,
+                assigned_to: document.getElementById('gmudAssigneeFilter').value,
+                search: document.getElementById('gmudSearch').value
+            })">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                CSV
+            </button>
             <div class="search-box">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8" />
@@ -112,11 +122,12 @@
                     <th>Data Término</th>
                     <th>Designado a</th>
                     <th>Observação</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody id="gmudBody">
                 <tr>
-                    <td colspan="9" style="text-align:center;padding:40px">
+                    <td colspan="10" style="text-align:center;padding:40px">
                         <div class="spinner" style="margin:auto"></div>
                     </td>
                 </tr>
@@ -171,7 +182,7 @@
     async function loadGmuds(page) {
         if (page) currentGmudPage = page;
         const body = document.getElementById('gmudBody');
-        body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr>';
+        body.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr>';
 
         try {
             const data = await API.gmuds({
@@ -187,7 +198,7 @@
             document.getElementById('gmudCount').textContent = data.total.toLocaleString('pt-BR');
 
             if (data.gmuds.length === 0) {
-                body.innerHTML = '<tr><td colspan="9"><div class="empty-state"><h3>Nenhuma GMUD encontrada</h3><p>Tente ajustar os filtros</p></div></td></tr>';
+                body.innerHTML = '<tr><td colspan="10"><div class="empty-state"><h3>Nenhuma GMUD encontrada</h3><p>Tente ajustar os filtros</p></div></td></tr>';
                 return;
             }
 
@@ -202,13 +213,46 @@
                 <td>${formatDateTime(g.end_date)}</td>
                 <td>${g.assigned_to || '—'}</td>
                 <td style="max-width: 200px">${g.observation || '—'}</td>
+                <td>
+                    <div style="display:flex;gap:4px">
+                        <a href="/gmud/edit/${g.id}" class="btn-icon-sm" title="Editar">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </a>
+                        <button class="btn-icon-sm danger" onclick="deleteGmud(${g.id}, '${(g.change_number || '').replace(/'/g, "\\'")}')" title="Excluir">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
             </tr>
         `).join('');
 
             document.getElementById('gmudPagination').innerHTML = createPagination(data, 'loadGmuds');
         } catch (e) {
-            body.innerHTML = '<tr><td colspan="9"><div class="empty-state"><h3>Erro ao carregar</h3></div></td></tr>';
+            body.innerHTML = '<tr><td colspan="10"><div class="empty-state"><h3>Erro ao carregar</h3></div></td></tr>';
             showToast('Erro: ' + e.message, 'error');
+        }
+    }
+
+
+    async function deleteGmud(id, changeNumber) {
+        if (!confirm(`Tem certeza que deseja excluir a GMUD ${changeNumber || id}? Esta ação não pode ser desfeita.`)) return;
+        try {
+            const res = await fetch(`/api/gmud/${id}`, { method: 'DELETE' });
+            const result = await res.json();
+            if (res.ok) {
+                showToast(result.message, 'success');
+                loadGmuds();
+            } else {
+                showToast('Erro: ' + result.message, 'error');
+            }
+        } catch (e) {
+            showToast('Erro de conexão: ' + e, 'error');
         }
     }
 
