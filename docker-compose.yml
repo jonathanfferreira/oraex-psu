@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: oraex_app
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persistir o banco de dados SQLite fora do container
+      - oraex_data:/app/data
+      # (Opcional) Mapear pasta de backups para salvar no host
+      - ./backups:/app/backups
+    environment:
+      - HOST=0.0.0.0
+      - DATABASE_PATH=/app/data/oraex.db
+    restart: unless-stopped
+
+volumes:
+  oraex_data:

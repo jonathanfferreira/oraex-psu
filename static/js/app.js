@@ -1,5 +1,5 @@
 /**
- * ORAEX PSU Manager — Main Application JS
+ * ORAEX PSU Manager — Main Application JS v2.0
  * Shared utilities, API calls, and common UI components
  */
 
@@ -53,13 +53,14 @@ function showToast(message, type = 'info') {
 
 
 function animateValue(el, start, end, duration = 1200) {
+    if (typeof el === 'string') el = document.getElementById(el);
+    if (!el) return;
     const range = end - start;
     const startTime = performance.now();
 
     function update(now) {
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        // easeOutExpo
         const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
         const current = Math.round(start + range * eased);
         el.textContent = current.toLocaleString('pt-BR');
@@ -127,7 +128,8 @@ function getEnvBadge(env) {
 function getPsuBadge(version) {
     if (!version) return '—';
     let cls = 'outdated';
-    if (version.includes('19.29') || version.includes('19.28')) cls = 'latest';
+    // 19.30 and 19.29 are latest
+    if (version.includes('19.30') || version.includes('19.29') || version.includes('19.28')) cls = 'latest';
     else if (version.includes('19.27') || version.includes('19.26')) cls = 'outdated';
     else cls = 'critical';
     return `<span class="psu-badge ${cls}">${version}</span>`;
@@ -139,7 +141,7 @@ function createPagination(data, onPageClick) {
     if (pages <= 1) return '';
 
     let html = '<div class="table-footer">';
-    html += `<span class="table-info">Mostrando página ${page} de ${pages} (${total.toLocaleString('pt-BR')} registros)</span>`;
+    html += `<span class="table-info">Página ${page} de ${pages} (${total.toLocaleString('pt-BR')} registros)</span>`;
     html += '<div class="pagination">';
 
     html += `<button class="page-btn" ${page <= 1 ? 'disabled' : ''} onclick="${onPageClick}(${page - 1})">‹</button>`;
@@ -216,7 +218,6 @@ async function loadLastUpdate() {
     }
 }
 
-// Load on page ready
 document.addEventListener('DOMContentLoaded', loadLastUpdate);
 
 
@@ -241,7 +242,7 @@ const CHART_COLORS = {
         '#8b5cf6', '#14b8a6', '#eab308', '#f43f5e', '#0ea5e9'
     ],
     paletteBg: [
-        'rgba(99,102,241,0.15)', 'rgba(168,85,247,0.15)', 'rgba(59,130,246,0.15)',
+        'rgba(0,136,238,0.15)', 'rgba(0,187,255,0.15)', 'rgba(59,130,246,0.15)',
         'rgba(16,185,129,0.15)', 'rgba(245,158,11,0.15)', 'rgba(239,68,68,0.15)',
         'rgba(6,182,212,0.15)', 'rgba(236,72,153,0.15)', 'rgba(249,115,22,0.15)',
         'rgba(132,204,22,0.15)', 'rgba(139,92,246,0.15)', 'rgba(20,184,166,0.15)',
@@ -250,7 +251,6 @@ const CHART_COLORS = {
 };
 
 
-// Chart.js defaults (applied when Chart.js is loaded)
 function applyChartDefaults() {
     if (typeof Chart === 'undefined') return;
 
@@ -260,7 +260,7 @@ function applyChartDefaults() {
     Chart.defaults.font.size = 11;
     Chart.defaults.plugins.legend.labels.usePointStyle = true;
     Chart.defaults.plugins.legend.labels.pointStyleWidth = 8;
-    Chart.defaults.plugins.legend.labels.padding = 16;
+    Chart.defaults.plugins.legend.labels.padding = 14;
     Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(10, 10, 26, 0.95)';
     Chart.defaults.plugins.tooltip.borderColor = 'rgba(255,255,255,0.1)';
     Chart.defaults.plugins.tooltip.borderWidth = 1;
@@ -275,7 +275,7 @@ function applyChartDefaults() {
 
 
 // ══════════════════════════════════════════════════════════
-//  DEBOUNCE UTILITY
+//  UTILITIES
 // ══════════════════════════════════════════════════════════
 
 function debounce(fn, delay = 300) {
@@ -286,10 +286,6 @@ function debounce(fn, delay = 300) {
     };
 }
 
-
-// ══════════════════════════════════════════════════════════
-//  CSV EXPORT
-// ══════════════════════════════════════════════════════════
 
 function exportCSV(apiUrl, params = {}) {
     const filtered = {};
@@ -302,16 +298,11 @@ function exportCSV(apiUrl, params = {}) {
 }
 
 
-// ══════════════════════════════════════════════════════════
-//  COPY TO CLIPBOARD
-// ══════════════════════════════════════════════════════════
-
 async function copyToClipboard(text) {
     try {
         await navigator.clipboard.writeText(text);
         showToast('Copiado para a área de transferência!', 'success');
     } catch {
-        // Fallback
         const ta = document.createElement('textarea');
         ta.value = text;
         document.body.appendChild(ta);
