@@ -16,7 +16,7 @@ CMDB_FULL_PATH = os.path.join(BASE_DIR, "CMDB Full GetBR (3).xlsx")
 # Flask
 SECRET_KEY = os.environ.get("ORAEX_SECRET_KEY", "oraex-psu-manager-2025-local-only")
 DEBUG = True
-HOST = "127.0.0.1"
+HOST = "0.0.0.0"
 PORT = 5000
 
 # Month sheets mapping (sheet name -> (year, month))
