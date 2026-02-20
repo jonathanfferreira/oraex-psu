@@ -11,15 +11,20 @@ from database import (
     get_cmdb_full, get_cmdb_full_stats, get_cmdb_full_filters,
     get_pagonxt_databases, search_hostnames,
     get_gmud_by_id, update_gmud, delete_gmud,
-    get_user_by_id, verify_user, ensure_admin_exists
+    get_user_by_id, verify_user, ensure_admin_exists,
+    get_server_details
 )
 from import_excel import run_import, run_cmdb_full_import
+from import_qualys import import_qualys_scan
 from export_excel import write_gmud_to_excel
-from config import SECRET_KEY, DEBUG, HOST, PORT
+from config import SECRET_KEY, DEBUG, HOST, PORT, MAX_CONTENT_LENGTH, QUALYS_PAGONXT_PATH, QUALYS_GETNET_PATH
+import sqlite3
 import os
+import tempfile
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 
 # ══════════════════════════════════════════════════════════
@@ -92,6 +97,11 @@ def dashboard():
 @login_required
 def inventory():
     return render_template("inventory.html", active="inventory")
+
+@app.route("/vulnerabilities")
+@login_required
+def vulnerabilities():
+    return render_template("vulnerabilities.html", active="vulnerabilities")
 
 
 @app.route("/cmdb-full")
@@ -202,6 +212,19 @@ def api_cmdb_full():
     return jsonify(data)
 
 
+@app.route("/server/<path:hostname>")
+@login_required
+def server_details(hostname):
+    """Página de detalhes do servidor."""
+    result = get_server_details(hostname)
+    if not result:
+        return f"<h3>Servidor '{hostname}' não encontrado.</h3><a href='/cmdb-full'>Voltar</a>", 404
+    return render_template("server_details.html", 
+                         server=result['server'], 
+                         gmuds=result['gmuds'], 
+                         active="cmdb_full")
+
+
 @app.route("/api/cmdb-full/stats")
 @login_required
 def api_cmdb_full_stats():
@@ -244,12 +267,26 @@ def api_filters():
 @app.route("/api/import", methods=["POST"])
 @login_required
 def api_import():
+    """Importa planilha Consolidação — aceita upload ou usa arquivo local."""
     try:
-        result = run_import()
-        if result:
-            return jsonify({"status": "success", "message": "Import completed successfully!"})
+        uploaded = request.files.get("file")
+        if uploaded and uploaded.filename:
+            # Salvar arquivo enviado em diretório temporário
+            suffix = os.path.splitext(uploaded.filename)[1] or ".xlsm"
+            fd, tmp_path = tempfile.mkstemp(suffix=suffix)
+            os.close(fd)
+            uploaded.save(tmp_path)
+            try:
+                result = run_import(excel_path=tmp_path)
+            finally:
+                os.unlink(tmp_path)  # Remove arquivo temporário
         else:
-            return jsonify({"status": "error", "message": "Import failed. Check the Excel file path."}), 400
+            result = run_import()
+
+        if result:
+            return jsonify({"status": "success", "message": "Importação da Consolidação concluída com sucesso!"})
+        else:
+            return jsonify({"status": "error", "message": "Falha na importação. Verifique o arquivo."}), 400
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -257,15 +294,155 @@ def api_import():
 @app.route("/api/import-cmdb-full", methods=["POST"])
 @login_required
 def api_import_cmdb_full():
+    """Importa planilha CMDB Full — aceita upload ou usa arquivo local."""
     try:
-        result = run_cmdb_full_import()
-        if result:
-            return jsonify({"status": "success", "message": "CMDB Full import completed successfully!"})
+        uploaded = request.files.get("file")
+        if uploaded and uploaded.filename:
+            suffix = os.path.splitext(uploaded.filename)[1] or ".xlsx"
+            fd, tmp_path = tempfile.mkstemp(suffix=suffix)
+            os.close(fd)
+            uploaded.save(tmp_path)
+            try:
+                result = run_cmdb_full_import(excel_path=tmp_path)
+            finally:
+                os.unlink(tmp_path)
         else:
-            return jsonify({"status": "error", "message": "Import failed. Check the CMDB Full file path."}), 400
+            result = run_cmdb_full_import()
+
+        if result:
+            return jsonify({"status": "success", "message": "Importação do CMDB Full concluída com sucesso!"})
+        else:
+            return jsonify({"status": "error", "message": "Falha na importação. Verifique o arquivo."}), 400
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
+@app.route("/api/import-qualys", methods=["POST"])
+@login_required
+def api_import_qualys():
+    """Importa planilhas do Qualys - aceita upload ou usa arquivo local."""
+    source_type = request.form.get('source_type', 'GetNet')
+    try:
+        uploaded = request.files.get("file")
+        if uploaded and uploaded.filename:
+            suffix = os.path.splitext(uploaded.filename)[1] or ".xlsx"
+            fd, tmp_path = tempfile.mkstemp(suffix=suffix)
+            os.close(fd)
+            uploaded.save(tmp_path)
+            try:
+                result = import_qualys_scan(tmp_path, source_type)
+            finally:
+                os.unlink(tmp_path)
+        else:
+            path = QUALYS_PAGONXT_PATH if source_type == 'PagoNxt' else QUALYS_GETNET_PATH
+            result = import_qualys_scan(path, source_type)
+
+        if result:
+            return jsonify({"status": "success", "message": f"Importação Qualys {source_type} concluída com sucesso!"})
+        else:
+            return jsonify({"status": "error", "message": "Falha na importação. Verifique o arquivo."}), 400
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/vulnerabilities", methods=["GET"])
+@login_required
+def api_vulnerabilities():
+    try:
+        from database import get_connection
+        conn = get_connection()
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cmdb_rows = cursor.execute("SELECT hostname, client, db_type, status FROM cmdb_full").fetchall()
+        cmdb_dict = { (r['hostname'] or '').lower(): r for r in cmdb_rows if r['hostname'] }
+        
+        query = """
+            SELECT d.id, d.qid, d.asset_name, d.asset_ip, d.environment, 
+                   d.os, d.status, d.first_detected, d.last_detected,
+                   v.title, v.severity, v.solution
+            FROM qualys_detections d
+            JOIN qualys_vulnerabilities v ON d.qid = v.qid
+        """
+        qualys_rows = cursor.execute(query).fetchall()
+        
+        result = []
+        for q in qualys_rows:
+            host_lower = (q['asset_name'] or '').lower()
+            if host_lower in cmdb_dict:
+                cmdb_ref = cmdb_dict[host_lower]
+                row = dict(q)
+                row['client'] = cmdb_ref['client']
+                row['db_type'] = cmdb_ref['db_type']
+                row['cmdb_status'] = cmdb_ref['status']
+                result.append(row)
+                
+        def get_sev_order(sev):
+            if sev == '5': return 1
+            if sev == '4': return 2
+            if sev == '3': return 3
+            return 4
+            
+        result.sort(key=lambda x: (get_sev_order(str(x['severity'])), (x['asset_name'] or '').lower()))
+        
+        conn.close()
+        return jsonify(result[:500])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/vulnerabilities/stats", methods=["GET"])
+@login_required
+def api_vulnerabilities_stats():
+    try:
+        from database import get_connection
+        conn = get_connection()
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cmdb_rows = cursor.execute("SELECT hostname, client, db_type, environment, status FROM cmdb_full").fetchall()
+        cmdb_dict = { (r['hostname'] or '').lower(): r for r in cmdb_rows if r['hostname'] }
+        
+        query = """
+            SELECT d.asset_name, v.severity
+            FROM qualys_detections d
+            JOIN qualys_vulnerabilities v ON d.qid = v.qid
+        """
+        qualys_rows = cursor.execute(query).fetchall()
+        conn.close()
+        
+        hosts_vuln = set()
+        sev_counts = {}
+        host_vuln_counts = {}
+        
+        for q in qualys_rows:
+            host_lower = (q['asset_name'] or '').lower()
+            if host_lower in cmdb_dict:
+                hosts_vuln.add(host_lower)
+                sev = str(q['severity'])
+                sev_counts[sev] = sev_counts.get(sev, 0) + 1
+                
+                if sev in ('4', '5'):
+                    if host_lower not in host_vuln_counts:
+                        host_vuln_counts[host_lower] = {
+                            'asset_name': q['asset_name'], 
+                            'db_type': cmdb_dict[host_lower]['db_type'],
+                            'environment': cmdb_dict[host_lower]['environment'],
+                            'count': 0
+                        }
+                    host_vuln_counts[host_lower]['count'] += 1
+                    
+        sev_breakdown = [{'severity': k, 'count': v} for k, v in sev_counts.items()]
+        sev_breakdown.sort(key=lambda x: x['severity'], reverse=True)
+        
+        top_hosts = list(host_vuln_counts.values())
+        top_hosts.sort(key=lambda x: x['count'], reverse=True)
+        
+        return jsonify({
+            "total_db_hosts_vulnerable": len(hosts_vuln),
+            "severity_breakdown": sev_breakdown,
+            "top_vulnerable_hosts": top_hosts[:10]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/gmud/edit/<int:gmud_id>")
 @login_required
@@ -411,9 +588,12 @@ def api_cmdb_full_export():
 #  INICIALIZAÇÃO (Startup)
 # ══════════════════════════════════════════════════════════
 
+# Inicializar DB sempre que o módulo for importado
+# (necessário para gunicorn, que não roda via __main__)
+init_db()
+ensure_admin_exists()
+
 if __name__ == "__main__":
-    init_db()
-    ensure_admin_exists()
     print(f"\n ORAEX PSU Manager")
     print(f" Open: http://{HOST}:{PORT}")
     print(f" Dashboard: http://{HOST}:{PORT}/")

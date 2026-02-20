@@ -98,6 +98,13 @@ def init_db():
             observation TEXT,
             vulnerability TEXT,
             opened_by TEXT,
+            vulnerability_before TEXT,
+            vulnerability_after TEXT,
+            closing_code TEXT,
+            needs_replan TEXT,
+            new_start_date TEXT,
+            new_end_date TEXT,
+            new_gmud TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -204,6 +211,41 @@ def init_db():
         )
     """)
 
+    # ── Qualys Vulnerability Definitions ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS qualys_vulnerabilities (
+            qid INTEGER PRIMARY KEY,
+            title TEXT,
+            severity TEXT,
+            threat TEXT,
+            solution TEXT,
+            category TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ── Qualys Detections on Servers ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS qualys_detections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            qid INTEGER,
+            asset_name TEXT,
+            asset_ip TEXT,
+            environment TEXT,
+            os TEXT,
+            os_version TEXT,
+            status TEXT,
+            first_detected TEXT,
+            last_detected TEXT,
+            detection_age INTEGER,
+            results TEXT,
+            overdue TEXT,
+            source TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (qid) REFERENCES qualys_vulnerabilities(qid)
+        )
+    """)
+
     # ── Users (Authentication) ──
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -231,6 +273,9 @@ def init_db():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_full_status ON cmdb_full(status)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_full_env ON cmdb_full(environment)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_full_host ON cmdb_full(hostname)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qualys_det_qid ON qualys_detections(qid)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qualys_det_asset ON qualys_detections(asset_name)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qualys_det_source ON qualys_detections(source)")
 
     conn.commit()
     conn.close()
@@ -562,40 +607,65 @@ def get_pagonxt_databases(search=None, page=1, per_page=50):
 
 def get_cmdb_full(client=None, db_type=None, status=None, environment=None,
                   search=None, page=1, per_page=50):
-    """Get CMDB Full database servers with filters and pagination."""
+    """Get CMDB Full database servers with filters and pagination.
+       Enriched with Oracle Inventory data (servers table) where matches found.
+    """
     conn = get_connection()
     c = conn.cursor()
 
     where = []
     params = []
 
+    # Base query now includes LEFT JOIN to servers
+    # We match on hostname and environment to ensure correct mapping
+    base_query = """
+        FROM cmdb_full c
+        LEFT JOIN servers s ON (
+            lower(c.hostname) = lower(s.primary_hostname) 
+            AND c.environment = s.environment
+        )
+    """
+
     if client:
-        where.append("client = ?")
+        where.append("c.client = ?")
         params.append(client)
     if db_type:
-        where.append("db_type = ?")
+        where.append("c.db_type = ?")
         params.append(db_type)
     if status:
-        where.append("status = ?")
+        where.append("c.status = ?")
         params.append(status)
     if environment:
-        where.append("environment = ?")
+        where.append("c.environment = ?")
         params.append(environment)
     if search:
-        where.append("(hostname LIKE ? OR contingency LIKE ? OR system_product LIKE ? OR description LIKE ?)")
+        where.append("(c.hostname LIKE ? OR c.contingency LIKE ? OR c.system_product LIKE ? OR c.description LIKE ?)")
         s = f"%{search}%"
         params.extend([s, s, s, s])
 
     where_clause = " WHERE " + " AND ".join(where) if where else ""
 
-    c.execute(f"SELECT COUNT(*) FROM cmdb_full{where_clause}", params)
+    # Count total
+    c.execute(f"SELECT COUNT(*) {base_query} {where_clause}", params)
     total = c.fetchone()[0]
 
-    c.execute(f"""
-        SELECT * FROM cmdb_full{where_clause}
-        ORDER BY client, environment, hostname
+    # Select fields - mixing CMDB columns with Oracle specific ones
+    # We prefer Oracle PSU version if available, otherwise CMDB DB version
+    select_sql = f"""
+        SELECT 
+            c.*,
+            s.psu_version as oracle_psu,
+            s.start_time as oracle_start,
+            s.end_time as oracle_end,
+            s.observation as oracle_observation,
+            s.primary_contact as oracle_contact
+        {base_query}
+        {where_clause}
+        ORDER BY c.client, c.environment, c.hostname
         LIMIT ? OFFSET ?
-    """, params + [per_page, (page - 1) * per_page])
+    """
+
+    c.execute(select_sql, params + [per_page, (page - 1) * per_page])
     rows = [dict(r) for r in c.fetchall()]
 
     conn.close()
@@ -849,3 +919,79 @@ def search_hostnames(query, limit=15):
 
 if __name__ == "__main__":
     init_db()
+
+def get_server_details(hostname):
+    """Get detailed info for a specific server (CMDB + Inventory + GMUDs)."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    # 1. Fetch Server Metadata (Union of CMDB Full and Inventory)
+    # We use a similar LEFT JOIN as get_cmdb_full to get the best of both worlds
+    query = """
+        SELECT 
+            c.*,
+            s.psu_version as oracle_psu,
+            s.start_time as oracle_start,
+            s.end_time as oracle_end,
+            s.observation as oracle_observation,
+            s.primary_contact as oracle_contact,
+            s.responsible_team as oracle_team,
+            s.standby_hostname as oracle_standby
+        FROM cmdb_full c
+        LEFT JOIN servers s ON (
+            lower(c.hostname) = lower(s.primary_hostname) 
+            AND c.environment = s.environment
+        )
+        WHERE lower(c.hostname) = lower(?)
+    """
+    c.execute(query, (hostname,))
+    row = c.fetchone()
+    
+    # If not found in CMDB Full, try searching just in Servers (Legacy Inventory)
+    # This handles case where a server might only exist in the old inventory sheet
+    if not row:
+        c.execute("SELECT * FROM servers WHERE lower(primary_hostname) = lower(?)", (hostname,))
+        server_row = c.fetchone()
+        if server_row:
+            # Normalize to match the CMDB structure partly
+            server_data = dict(server_row)
+            server_details = {
+                "hostname": server_data['primary_hostname'],
+                "environment": server_data['environment'],
+                "db_type": "Oracle", # Assumed
+                "status": "In Inventory Only",
+                "oracle_psu": server_data['psu_version'],
+                "oracle_start": server_data['start_time'],
+                "oracle_end": server_data['end_time'],
+                "oracle_observation": server_data['observation'],
+                "primary_contact": server_data['primary_contact'],
+                "responsible_team": server_data['responsible_team'],
+                "system_product": server_data['system_product'],
+                "source": "Inventory Only"
+            }
+        else:
+            conn.close()
+            return None
+    else:
+        server_details = dict(row)
+        server_details["source"] = "CMDB Full"
+
+    # 2. Fetch GMUD History
+    # Search for hostname in GMUD title or observation
+    # Also match environment/client if possible to reduce false positives, 
+    # but hostname is usually unique enough.
+    gmud_query = """
+        SELECT * FROM gmuds 
+        WHERE (title LIKE ? OR observation LIKE ?)
+        ORDER BY start_date DESC
+    """
+    search_term = f"%{hostname}%"
+    c.execute(gmud_query, (search_term, search_term))
+    gmuds = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+    
+    return {
+        "server": server_details,
+        "gmuds": gmuds
+    }

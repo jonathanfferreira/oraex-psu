@@ -7,13 +7,19 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      # Persistir o banco de dados SQLite fora do container
+      # Hot-Reload: Mount local directory to /app
+      - .:/app
+      # Persist SQLite database outside container
       - oraex_data:/app/data
-      # (Opcional) Mapear pasta de backups para salvar no host
+      # (Optional) Map backups folder
       - ./backups:/app/backups
     environment:
       - HOST=0.0.0.0
       - DATABASE_PATH=/app/data/oraex.db
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    # Command to run in dev mode (overrides Dockefile CMD if needed, or just use flask run)
+    command: flask run --host=0.0.0.0 --port=5000 --reload
     restart: unless-stopped
 
 volumes:

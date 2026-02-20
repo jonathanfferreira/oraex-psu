@@ -5,19 +5,30 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Database
-DATABASE_PATH = os.path.join(BASE_DIR, "oraex.db")
+# Database — in Cloud Run, DATABASE_PATH points to mounted GCS volume
+DATABASE_PATH = os.environ.get("DATABASE_PATH", os.path.join(BASE_DIR, "oraex.db"))
 
-# Excel sources
-EXCEL_PATH = os.path.join(BASE_DIR, "ORAEX - Consolidação GetTech 2025 (6).xlsm")
+# Excel sources (fallback for local usage; in prod, files come via upload)
+EXCEL_PATH = os.environ.get("EXCEL_PATH",
+    os.path.join(BASE_DIR, "ORAEX - Consolidação GetTech 2025 (7).xlsm"))
 GMUD_PATH = EXCEL_PATH
-CMDB_FULL_PATH = os.path.join(BASE_DIR, "CMDB Full GetBR (3).xlsx")
+CMDB_FULL_PATH = os.environ.get("CMDB_FULL_PATH",
+    os.path.join(BASE_DIR, "CMDB Full GetBR (4).xlsx"))
+
+# Qualys sources (fallback for local usage)
+QUALYS_PAGONXT_PATH = os.environ.get("QUALYS_PAGONXT_PATH",
+    os.path.join(BASE_DIR, "scan-vulnerabilidades", "20260219 - SCAN FULL QUALYS - PAGONXT.xlsx"))
+QUALYS_GETNET_PATH = os.environ.get("QUALYS_GETNET_PATH",
+    os.path.join(BASE_DIR, "scan-vulnerabilidades", "20260219 - SCAN FULL QUALYS.xlsm"))
 
 # Flask
 SECRET_KEY = os.environ.get("ORAEX_SECRET_KEY", "oraex-psu-manager-2025-local-only")
-DEBUG = True
+DEBUG = os.environ.get("FLASK_DEBUG", "false").lower() in ("1", "true", "yes")
 HOST = "0.0.0.0"
-PORT = 5000
+PORT = int(os.environ.get("PORT", 5000))
+
+# Max upload size (50MB)
+MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 50 * 1024 * 1024))
 
 # Month sheets mapping (sheet name -> (year, month))
 MONTH_SHEETS = {

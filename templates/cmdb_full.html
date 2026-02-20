@@ -7,29 +7,83 @@
 <div class="content">
     <div class="cmdb-header-actions">
         <div class="filter-group">
-            <select id="filterClient" class="filter-select" onchange="applyFilters()"><option value="">Todos os Clientes</option></select>
-            <select id="filterDbType" class="filter-select" onchange="applyFilters()"><option value="">Todas Tecnologias</option></select>
-            <select id="filterStatus" class="filter-select" onchange="applyFilters()"><option value="">Todos Status</option></select>
-            <select id="filterEnv" class="filter-select" onchange="applyFilters()"><option value="">Todos Ambientes</option></select>
+            <select id="filterClient" class="filter-select" onchange="applyFilters()">
+                <option value="">Todos os Clientes</option>
+            </select>
+            <select id="filterDbType" class="filter-select" onchange="applyFilters()">
+                <option value="">Todas Tecnologias</option>
+            </select>
+            <select id="filterStatus" class="filter-select" onchange="applyFilters()">
+                <option value="">Todos Status</option>
+            </select>
+            <select id="filterEnv" class="filter-select" onchange="applyFilters()">
+                <option value="">Todos Ambientes</option>
+            </select>
         </div>
-        <button class="btn btn-secondary" style="padding:6px 12px;font-size:0.78rem;display:flex;align-items:center;gap:4px" onclick="exportCSV('/api/cmdb-full/export',{client:document.getElementById('filterClient').value,db_type:document.getElementById('filterDbType').value,status:document.getElementById('filterStatus').value,environment:document.getElementById('filterEnv').value,search:document.getElementById('searchInput').value})">
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>CSV
+        <button class="btn btn-secondary"
+            style="padding:6px 12px;font-size:0.78rem;display:flex;align-items:center;gap:4px"
+            onclick="exportCSV('/api/cmdb-full/export',{client:document.getElementById('filterClient').value,db_type:document.getElementById('filterDbType').value,status:document.getElementById('filterStatus').value,environment:document.getElementById('filterEnv').value,search:document.getElementById('searchInput').value})">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+            </svg>CSV
         </button>
-        <button class="btn btn-primary" onclick="triggerCMDBImport()" style="font-size:0.78rem;padding:6px 12px">Importar CMDB Full</button>
+        <button class="btn btn-primary" onclick="triggerCMDBImport()"
+            style="font-size:0.78rem;padding:6px 12px">Importar CMDB Full</button>
     </div>
 
     <!-- KPI Cards -->
     <div class="kpi-grid">
-        <div class="kpi-card accent-1"><div class="kpi-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div><div class="kpi-label">Total Servidores DB</div><div class="kpi-value" id="statTotal">-</div></div>
-        <div class="kpi-card accent-2"><div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="kpi-label">Ativos / Running</div><div class="kpi-value" id="statActive">-</div></div>
-        <div class="kpi-card accent-4"><div class="kpi-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div><div class="kpi-label">Tecnologias</div><div class="kpi-value" id="statTechs">-</div></div>
-        <div class="kpi-card accent-3"><div class="kpi-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="kpi-label">Ambientes</div><div class="kpi-value" id="statEnvs">-</div></div>
+        <div class="kpi-card accent-1">
+            <div class="kpi-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+                </svg></div>
+            <div class="kpi-label">Total Servidores DB</div>
+            <div class="kpi-value" id="statTotal">-</div>
+        </div>
+        <div class="kpi-card accent-2">
+            <div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                </svg></div>
+            <div class="kpi-label">Ativos / Running</div>
+            <div class="kpi-value" id="statActive">-</div>
+        </div>
+        <div class="kpi-card accent-4">
+            <div class="kpi-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 00-3-3.87" />
+                    <path d="M16 3.13a4 4 0 010 7.75" />
+                </svg></div>
+            <div class="kpi-label">Tecnologias</div>
+            <div class="kpi-value" id="statTechs">-</div>
+        </div>
+        <div class="kpi-card accent-3">
+            <div class="kpi-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                    <line x1="8" y1="21" x2="16" y2="21" />
+                    <line x1="12" y1="17" x2="12" y2="21" />
+                </svg></div>
+            <div class="kpi-label">Ambientes</div>
+            <div class="kpi-value" id="statEnvs">-</div>
+        </div>
     </div>
 
     <!-- Charts Row -->
     <div class="charts-row">
-        <div class="chart-card"><div class="card-header"><h3>Distribuição por Tecnologia</h3></div><div class="chart-container"><canvas id="dbTypeChart"></canvas></div></div>
-        <div class="chart-card"><div class="card-header"><h3>Servidores por Ambiente</h3></div><div class="chart-container"><canvas id="envChart"></canvas></div></div>
+        <div class="chart-card">
+            <div class="card-header">
+                <h3>Distribuição por Tecnologia</h3>
+            </div>
+            <div class="chart-container"><canvas id="dbTypeChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="card-header">
+                <h3>Servidores por Ambiente</h3>
+            </div>
+            <div class="chart-container"><canvas id="envChart"></canvas></div>
+        </div>
     </div>
 
     <!-- Data Table -->
@@ -37,14 +91,33 @@
         <div class="toolbar">
             <input type="text" id="searchInput" placeholder="Buscar hostname, sistema, IP..." onkeyup="handleSearch()">
             <div class="pagination-controls">
-                <button onclick="prevPage()" id="prevBtn" disabled><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+                <button onclick="prevPage()" id="prevBtn" disabled><svg viewBox="0 0 24 24" width="14" height="14"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg></button>
                 <span id="pageInfo">Página 1 de 1</span>
-                <button onclick="nextPage()" id="nextBtn" disabled><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+                <button onclick="nextPage()" id="nextBtn" disabled><svg viewBox="0 0 24 24" width="14" height="14"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg></button>
             </div>
         </div>
         <div class="table-wrapper">
             <table>
-                <thead><tr><th>Cliente</th><th>Hostname</th><th>Tipo BD</th><th>Versão</th><th>Ambiente</th><th>Status</th><th>IP Serviço</th><th>Sistema / Produto</th><th>Equipe</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Hostname</th>
+                        <th>Tipo BD</th>
+                        <th>Versão / PSU</th>
+                        <th>Ambiente</th>
+                        <th>Janela</th>
+                        <th>Status</th>
+                        <th>IP Serviço</th>
+                        <th>Sistema / Produto</th>
+                        <th>Equipe</th>
+                    </tr>
+                </thead>
                 <tbody id="cmdbTableBody"></tbody>
             </table>
         </div>
@@ -53,177 +126,184 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let currentPage = 1, totalPages = 1, searchTimeout = null;
-let dbTypeChart = null, envChart = null;
+    let currentPage = 1, totalPages = 1, searchTimeout = null;
+    let dbTypeChart = null, envChart = null;
 
-document.addEventListener("DOMContentLoaded", () => { loadFilters(); applyFilters(); });
+    document.addEventListener("DOMContentLoaded", () => { loadFilters(); applyFilters(); });
 
-function getFilterParams() {
-    return {
-        client: document.getElementById('filterClient').value,
-        db_type: document.getElementById('filterDbType').value,
-        status: document.getElementById('filterStatus').value,
-        environment: document.getElementById('filterEnv').value,
-        search: document.getElementById('searchInput').value,
-    };
-}
-
-function applyFilters() { currentPage = 1; loadStats(); loadData(); }
-function handleSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentPage = 1; loadData(); }, 300); }
-
-async function loadFilters() {
-    const res = await fetch('/api/cmdb-full/filters');
-    const data = await res.json();
-    populateSelect('filterClient', data.clients);
-    populateSelect('filterDbType', data.db_types);
-    populateSelect('filterStatus', data.statuses);
-    populateSelect('filterEnv', data.environments);
-}
-
-function populateSelect(id, options) {
-    const sel = document.getElementById(id);
-    const cur = sel.value;
-    const first = sel.options[0].outerHTML;
-    sel.innerHTML = first;
-    options.forEach(o => { const el = document.createElement('option'); el.value = o; el.textContent = o; sel.appendChild(el); });
-    sel.value = cur;
-}
-
-async function loadStats() {
-    // Use the full filtered data endpoint to compute accurate stats
-    const fp = getFilterParams();
-    const params = new URLSearchParams({ page: 1, per_page: 99999 });
-    Object.entries(fp).forEach(([k,v]) => { if (v) params.append(k, v); });
-    
-    const res = await fetch(`/api/cmdb-full?${params}`);
-    const result = await res.json();
-    const rows = result.data;
-    
-    // Compute KPIs from filtered data
-    const total = result.total;
-    const active = rows.filter(r => ['Ativo','Running'].includes(r.status)).length;
-    const techsSet = new Set(rows.map(r => r.db_type).filter(Boolean));
-    const envsSet = new Set(rows.map(r => r.environment).filter(Boolean));
-    
-    animVal('statTotal', total);
-    animVal('statActive', active);
-    animVal('statTechs', techsSet.size);
-    animVal('statEnvs', envsSet.size);
-    
-    // Compute chart data from filtered rows
-    const byDbType = {};
-    const byEnv = {};
-    rows.forEach(r => {
-        if (r.db_type) byDbType[r.db_type] = (byDbType[r.db_type]||0) + 1;
-        if (r.environment) byEnv[r.environment] = (byEnv[r.environment]||0) + 1;
-    });
-    
-    renderCharts(byDbType, byEnv);
-}
-
-function renderCharts(byDbType, byEnv) {
-    const ctxDb = document.getElementById('dbTypeChart').getContext('2d');
-    const ctxEnv = document.getElementById('envChart').getContext('2d');
-    if (dbTypeChart) dbTypeChart.destroy();
-    if (envChart) envChart.destroy();
-    const colors = ['#0088ee','#00bbff','#00eebb','#ffaa00','#ff4444','#aa00ff','#ff00aa','#10b981','#f59e0b','#3b82f6'];
-    
-    const dbLabels = Object.keys(byDbType).sort((a,b) => byDbType[b] - byDbType[a]);
-    const dbValues = dbLabels.map(k => byDbType[k]);
-    
-    dbTypeChart = new Chart(ctxDb, {
-        type: 'bar',
-        data: { labels: dbLabels, datasets: [{ label: 'Servidores', data: dbValues, backgroundColor: colors.slice(0, dbLabels.length), borderRadius: 4 }] },
-        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' } }, y: { grid: { display: false } } } }
-    });
-    
-    const envLabels = Object.keys(byEnv).sort((a,b) => byEnv[b] - byEnv[a]);
-    const envValues = envLabels.map(k => byEnv[k]);
-    
-    envChart = new Chart(ctxEnv, {
-        type: 'doughnut',
-        data: { labels: envLabels, datasets: [{ data: envValues, backgroundColor: colors.slice(0, envLabels.length), borderWidth: 0 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#e0e0e0', font: { size: 10 } } } }, cutout: '60%' }
-    });
-}
-
-async function loadData() {
-    const fp = getFilterParams();
-    const params = new URLSearchParams({ page: currentPage, per_page: 50 });
-    Object.entries(fp).forEach(([k,v]) => { if (v) params.append(k, v); });
-    
-    const res = await fetch(`/api/cmdb-full?${params}`);
-    const data = await res.json();
-    updateTable(data.data);
-    updatePagination(data);
-}
-
-function updateTable(rows) {
-    const tbody = document.getElementById('cmdbTableBody');
-    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center">Nenhum registro encontrado.</td></tr>'; return; }
-    tbody.innerHTML = rows.map(row => {
-        let sc = 'status-default';
-        if (['Ativo','Running'].includes(row.status)) sc = 'status-ok';
-        else if (row.status && row.status.includes('Descontinuado')) sc = 'status-critical';
-        else if (row.status && row.status.includes('Construção')) sc = 'status-warning';
-        const dl = (row.db_type||'').toLowerCase();
-        let logo = `<div class="db-logo-placeholder">${(row.db_type||'DB').substring(0,2).toUpperCase()}</div>`;
-        if (dl.includes('oracle')) logo = '<img src="/static/img/logos/oracle.png" class="db-logo" alt="Oracle">';
-        else if (dl.includes('sql server')) logo = '<img src="/static/img/logos/sqlserver.jpg" class="db-logo" alt="SQL Server">';
-        else if (dl.includes('mongo')) logo = '<img src="/static/img/logos/mongodb.webp" class="db-logo" alt="MongoDB">';
-        else if (dl.includes('mysql')) logo = '<img src="/static/img/logos/mysql.png" class="db-logo" alt="MySQL">';
-        else if (dl.includes('postgres')) logo = '<img src="/static/img/logos/postgres.png" class="db-logo" alt="PostgreSQL">';
-        return `<tr>
-            <td><span class="badge ${row.client==='GetNet'?'badge-blue':'badge-red'}">${row.client}</span></td>
-            <td class="font-mono font-medium">${row.hostname||'-'}</td>
-            <td><div class="flex items-center gap-2">${logo}<span class="font-bold">${row.db_type||'-'}</span></div></td>
-            <td>${row.db_version||'<span class="text-muted">-</span>'}</td>
-            <td>${row.environment||'-'}</td>
-            <td><span class="status-badge ${sc}">${row.status||'N/A'}</span></td>
-            <td class="font-mono text-sm">${row.ip_service||row.ip_backup||'-'}</td>
-            <td class="truncate" title="${row.system_product||''}">${row.system_product||'-'}</td>
-            <td class="truncate" title="${row.responsible_team||''}">${row.responsible_team||'-'}</td>
-        </tr>`;
-    }).join('');
-}
-
-function updatePagination(data) {
-    currentPage = data.page; totalPages = data.pages;
-    document.getElementById('pageInfo').textContent = `Página ${data.page} de ${data.pages} (${data.total} registros)`;
-    document.getElementById('prevBtn').disabled = currentPage === 1;
-    document.getElementById('nextBtn').disabled = currentPage >= totalPages;
-}
-function prevPage() { if (currentPage > 1) { currentPage--; loadData(); } }
-function nextPage() { if (currentPage < totalPages) { currentPage++; loadData(); } }
-
-function animVal(id, value) {
-    const obj = document.getElementById(id);
-    if (!obj) return;
-    let start = parseInt(obj.innerText.replace(/\./g,'').replace(/,/g,'')) || 0;
-    const end = parseInt(value) || 0;
-    if (start === end) { obj.innerHTML = end.toLocaleString('pt-BR'); return; }
-    const dur = 800; let st = null;
-    function step(ts) {
-        if (!st) st = ts;
-        const p = Math.min((ts-st)/dur, 1);
-        obj.innerHTML = Math.floor(p*(end-start)+start).toLocaleString('pt-BR');
-        if (p < 1) requestAnimationFrame(step);
-        else obj.innerHTML = end.toLocaleString('pt-BR');
+    function getFilterParams() {
+        return {
+            client: document.getElementById('filterClient').value,
+            db_type: document.getElementById('filterDbType').value,
+            status: document.getElementById('filterStatus').value,
+            environment: document.getElementById('filterEnv').value,
+            search: document.getElementById('searchInput').value,
+        };
     }
-    requestAnimationFrame(step);
-}
 
-async function triggerCMDBImport() {
-    if (!confirm("Re-importar toda a base CMDB Full? Pode levar alguns segundos.")) return;
-    const btn = event.target; const orig = btn.innerHTML;
-    btn.disabled = true; btn.innerHTML = '⏳ Importando...';
-    try {
-        const res = await fetch('/api/import-cmdb-full', { method: 'POST' });
+    function applyFilters() { currentPage = 1; loadStats(); loadData(); }
+    function handleSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentPage = 1; loadData(); }, 300); }
+
+    async function loadFilters() {
+        const res = await fetch('/api/cmdb-full/filters');
         const data = await res.json();
-        if (data.status === 'success') { showToast('Importação concluída!','success'); loadFilters(); applyFilters(); }
-        else showToast('Erro: ' + data.message, 'error');
-    } catch (e) { showToast('Erro: ' + e, 'error'); }
-    finally { btn.disabled = false; btn.innerHTML = orig; }
-}
+        populateSelect('filterClient', data.clients);
+        populateSelect('filterDbType', data.db_types);
+        populateSelect('filterStatus', data.statuses);
+        populateSelect('filterEnv', data.environments);
+    }
+
+    function populateSelect(id, options) {
+        const sel = document.getElementById(id);
+        const cur = sel.value;
+        const first = sel.options[0].outerHTML;
+        sel.innerHTML = first;
+        options.forEach(o => { const el = document.createElement('option'); el.value = o; el.textContent = o; sel.appendChild(el); });
+        sel.value = cur;
+    }
+
+    async function loadStats() {
+        // Use the full filtered data endpoint to compute accurate stats
+        const fp = getFilterParams();
+        const params = new URLSearchParams({ page: 1, per_page: 99999 });
+        Object.entries(fp).forEach(([k, v]) => { if (v) params.append(k, v); });
+
+        const res = await fetch(`/api/cmdb-full?${params}`);
+        const result = await res.json();
+        const rows = result.data;
+
+        // Compute KPIs from filtered data
+        const total = result.total;
+        const active = rows.filter(r => ['Ativo', 'Running'].includes(r.status)).length;
+        const techsSet = new Set(rows.map(r => r.db_type).filter(Boolean));
+        const envsSet = new Set(rows.map(r => r.environment).filter(Boolean));
+
+        animVal('statTotal', total);
+        animVal('statActive', active);
+        animVal('statTechs', techsSet.size);
+        animVal('statEnvs', envsSet.size);
+
+        // Compute chart data from filtered rows
+        const byDbType = {};
+        const byEnv = {};
+        rows.forEach(r => {
+            if (r.db_type) byDbType[r.db_type] = (byDbType[r.db_type] || 0) + 1;
+            if (r.environment) byEnv[r.environment] = (byEnv[r.environment] || 0) + 1;
+        });
+
+        renderCharts(byDbType, byEnv);
+    }
+
+    function renderCharts(byDbType, byEnv) {
+        const ctxDb = document.getElementById('dbTypeChart').getContext('2d');
+        const ctxEnv = document.getElementById('envChart').getContext('2d');
+        if (dbTypeChart) dbTypeChart.destroy();
+        if (envChart) envChart.destroy();
+        const colors = ['#0F172A', '#a3e635', '#f97316', '#ef4444', '#eab308', '#ec4899', '#3b82f6', '#14b8a6', '#8b5cf6'];
+
+        const dbLabels = Object.keys(byDbType).sort((a, b) => byDbType[b] - byDbType[a]);
+        const dbValues = dbLabels.map(k => byDbType[k]);
+
+        dbTypeChart = new Chart(ctxDb, {
+            type: 'bar',
+            data: { labels: dbLabels, datasets: [{ label: 'Servidores', data: dbValues, backgroundColor: colors.slice(0, dbLabels.length), borderRadius: 0, borderWidth: 2, borderColor: '#000' }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { family: 'Space Mono' } } }, y: { ticks: { font: { family: 'Space Mono', size: 10 } } } } }
+        });
+
+        const envLabels = Object.keys(byEnv).sort((a, b) => byEnv[b] - byEnv[a]);
+        const envValues = envLabels.map(k => byEnv[k]);
+
+        envChart = new Chart(ctxEnv, {
+            type: 'doughnut',
+            data: { labels: envLabels, datasets: [{ data: envValues, backgroundColor: colors.slice(0, envLabels.length), borderWidth: 2, borderColor: '#000' }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#0F172A', font: { family: 'Space Mono', size: 10 } } } }, cutout: '60%' }
+        });
+    }
+
+    async function loadData() {
+        const fp = getFilterParams();
+        const params = new URLSearchParams({ page: currentPage, per_page: 50 });
+        Object.entries(fp).forEach(([k, v]) => { if (v) params.append(k, v); });
+
+        const res = await fetch(`/api/cmdb-full?${params}`);
+        const data = await res.json();
+        updateTable(data.data);
+        updatePagination(data);
+    }
+
+    function updateTable(rows) {
+        const tbody = document.getElementById('cmdbTableBody');
+        if (!rows.length) { tbody.innerHTML = '<tr><td colspan="10" class="text-center">Nenhum registro encontrado.</td></tr>'; return; }
+        tbody.innerHTML = rows.map(row => {
+            let sc = 'status-default';
+            if (['Ativo', 'Running'].includes(row.status)) sc = 'status-ok';
+            else if (row.status && row.status.includes('Descontinuado')) sc = 'status-critical';
+            else if (row.status && row.status.includes('Construção')) sc = 'status-warning';
+
+            const dl = (row.db_type || '').toLowerCase();
+            let logo = `<div class="db-logo-placeholder">${(row.db_type || 'DB').substring(0, 2).toUpperCase()}</div>`;
+            if (dl.includes('oracle')) logo = '<img src="/static/img/logos/oracle.png" class="db-logo" alt="Oracle">';
+            else if (dl.includes('sql server')) logo = '<img src="/static/img/logos/sqlserver.jpg" class="db-logo" alt="SQL Server">';
+            else if (dl.includes('mongo')) logo = '<img src="/static/img/logos/mongodb.webp" class="db-logo" alt="MongoDB">';
+            else if (dl.includes('mysql')) logo = '<img src="/static/img/logos/mysql.png" class="db-logo" alt="MySQL">';
+            else if (dl.includes('postgres')) logo = '<img src="/static/img/logos/postgres.png" class="db-logo" alt="PostgreSQL">';
+
+            const psu = row.oracle_psu || row.db_version || '<span class="text-muted">-</span>';
+            const window = (row.oracle_start && row.oracle_end) ? `<div style="font-size:0.75rem;line-height:1.2;white-space:nowrap">${row.oracle_start}<br>${row.oracle_end}</div>` : '-';
+            const obs = row.oracle_observation ? `<span style="cursor:help;font-size:1rem;margin-left:6px" title="${row.oracle_observation}">📝</span>` : '';
+
+            return `<tr>
+            <td><span class="badge ${row.client === 'GetNet' ? 'badge-blue' : 'badge-red'}">${row.client}</span></td>
+            <td class="font-mono font-medium"><div class="flex items-center"><a href="/server/${row.hostname}" class="text-blue-400 hover:text-blue-300 hover:underline" onclick="event.stopPropagation()">${row.hostname || '-'}</a> ${obs}</div></td>
+            <td><div class="flex items-center gap-2">${logo}<span class="font-bold">${row.db_type || '-'}</span></div></td>
+            <td>${psu}</td>
+            <td>${row.environment || '-'}</td>
+            <td class="text-center">${window}</td>
+            <td><span class="status-badge ${sc}">${row.status || 'N/A'}</span></td>
+            <td class="font-mono text-sm">${row.ip_service || row.ip_backup || '-'}</td>
+            <td class="truncate" title="${row.system_product || ''}">${row.system_product || '-'}</td>
+            <td class="truncate" title="${row.responsible_team || ''}">${row.responsible_team || '-'}</td>
+        </tr>`;
+        }).join('');
+    }
+
+    function updatePagination(data) {
+        currentPage = data.page; totalPages = data.pages;
+        document.getElementById('pageInfo').textContent = `Página ${data.page} de ${data.pages} (${data.total} registros)`;
+        document.getElementById('prevBtn').disabled = currentPage === 1;
+        document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+    }
+    function prevPage() { if (currentPage > 1) { currentPage--; loadData(); } }
+    function nextPage() { if (currentPage < totalPages) { currentPage++; loadData(); } }
+
+    function animVal(id, value) {
+        const obj = document.getElementById(id);
+        if (!obj) return;
+        let start = parseInt(obj.innerText.replace(/\./g, '').replace(/,/g, '')) || 0;
+        const end = parseInt(value) || 0;
+        if (start === end) { obj.innerHTML = end.toLocaleString('pt-BR'); return; }
+        const dur = 800; let st = null;
+        function step(ts) {
+            if (!st) st = ts;
+            const p = Math.min((ts - st) / dur, 1);
+            obj.innerHTML = Math.floor(p * (end - start) + start).toLocaleString('pt-BR');
+            if (p < 1) requestAnimationFrame(step);
+            else obj.innerHTML = end.toLocaleString('pt-BR');
+        }
+        requestAnimationFrame(step);
+    }
+
+    async function triggerCMDBImport() {
+        if (!confirm("Re-importar toda a base CMDB Full? Pode levar alguns segundos.")) return;
+        const btn = event.target; const orig = btn.innerHTML;
+        btn.disabled = true; btn.innerHTML = '⏳ Importando...';
+        try {
+            const res = await fetch('/api/import-cmdb-full', { method: 'POST' });
+            const data = await res.json();
+            if (data.status === 'success') { showToast('Importação concluída!', 'success'); loadFilters(); applyFilters(); }
+            else showToast('Erro: ' + data.message, 'error');
+        } catch (e) { showToast('Erro: ' + e, 'error'); }
+        finally { btn.disabled = false; btn.innerHTML = orig; }
+    }
 </script>
 {% endblock %}

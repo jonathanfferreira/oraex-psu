@@ -9,9 +9,181 @@
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo-oraex-azul.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neo: {
+                            black: '#0F172A',
+                            acid: '#a3e635',
+                            danger: '#ef4444',
+                            warning: '#f97316',
+                            yellow: '#eab308'
+                        }
+                    },
+                    fontFamily: {
+                        tech: ['"Space Mono"', 'monospace'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --brand-black: #0F172A;
+            --brand-acid: #a3e635;
+            --brand-danger: #ef4444;
+            --brand-warning: #f97316;
+            --brutal-border: 2px solid var(--brand-black);
+            --brutal-shadow: 4px 4px 0px var(--brand-black);
+        }
+
+        body {
+            background-color: #f8fafc;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .brutal-box {
+            border: var(--brutal-border) !important;
+            box-shadow: var(--brutal-shadow) !important;
+            background-color: white;
+            border-radius: 0 !important;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .brutal-title {
+            font-family: 'Space Mono', monospace;
+            letter-spacing: -0.05em;
+            text-transform: uppercase;
+        }
+
+        .tech-font {
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* Subvert Sidebar Glassmorphism */
+        .sidebar {
+            background-color: var(--brand-black) !important;
+            border-right: var(--brutal-border) !important;
+            border-radius: 0 !important;
+        }
+
+        .nav-item {
+            border-radius: 0 !important;
+            font-family: 'Space Mono', monospace !important;
+            text-transform: uppercase;
+            font-size: 0.85rem !important;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-item.active,
+        .nav-item:hover {
+            background-color: var(--brand-acid) !important;
+            color: var(--brand-black) !important;
+            box-shadow: 4px 4px 0px white !important;
+            transform: translate(-2px, -2px);
+            border: 1px solid var(--brand-black) !important;
+        }
+
+        .page-header {
+            background: transparent !important;
+            border-bottom: var(--brutal-border) !important;
+            border-radius: 0 !important;
+        }
+
+        .page-title {
+            font-family: 'Space Mono', monospace !important;
+            text-transform: uppercase;
+            font-weight: 900 !important;
+            color: var(--brand-black) !important;
+            letter-spacing: -0.05em;
+        }
+
+        .page-subtitle {
+            font-family: 'Space Mono', monospace !important;
+            text-transform: uppercase;
+            font-weight: bold;
+            color: var(--brand-danger) !important;
+        }
+
+        .last-update {
+            background-color: white !important;
+            border: var(--brutal-border) !important;
+            border-radius: 0 !important;
+            box-shadow: var(--brutal-shadow) !important;
+            font-family: 'Space Mono', monospace !important;
+            color: var(--brand-black) !important;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        /* Generic Utilities */
+        .bg-neo-black {
+            background-color: var(--brand-black) !important;
+        }
+
+        .text-neo-black {
+            color: var(--brand-black) !important;
+        }
+
+        .border-neo-black {
+            border-color: var(--brand-black) !important;
+        }
+
+        .bg-neo-acid {
+            background-color: var(--brand-acid) !important;
+        }
+
+        .text-neo-acid {
+            color: var(--brand-acid) !important;
+        }
+
+        .hover-bg-neo-acid:hover {
+            background-color: var(--brand-acid) !important;
+            color: var(--brand-black) !important;
+        }
+
+        .bg-neo-danger {
+            background-color: var(--brand-danger) !important;
+        }
+
+        .text-neo-danger {
+            color: var(--brand-danger) !important;
+        }
+
+        .bg-neo-warning {
+            background-color: var(--brand-warning) !important;
+        }
+
+        .bg-neo-yellow {
+            background-color: #eab308 !important;
+        }
+
+        .neo-shadow-sm {
+            box-shadow: 2px 2px 0px white !important;
+        }
+
+        .neo-shadow-dark {
+            box-shadow: 2px 2px 0px var(--brand-black) !important;
+        }
+
+        .neo-shadow-x {
+            box-shadow: 4px 0px 0px var(--brand-black) !important;
+        }
+
+        .group-hover-bg-neo-acid:hover .group-target-bg {
+            background-color: var(--brand-acid) !important;
+        }
+    </style>
     {% block head %}{% endblock %}
 </head>
 
@@ -20,9 +192,9 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <div class="logo-icon">
-                    <img src="{{ url_for('static', filename='img/logo-oraex-azul.png') }}" alt="ORAEX"
-                        style="width: 28px; height: 28px; object-fit: contain; border-radius: 6px;">
+                <div class="logo-icon bg-neo-acid flex items-center justify-center neo-shadow-sm border-2 border-white"
+                    style="width: 32px; height: 32px; border-radius: 0;">
+                    <span class="tech-font font-black text-neo-black text-xl">>_</span>
                 </div>
                 <div class="logo-text">
                     <span class="logo-name">ORAEX</span>
@@ -31,7 +203,7 @@
             </div>
             <button class="toggle-btn" id="sidebarToggle" onclick="toggleSidebar()" title="Recolher menu">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M15 18l-6-6 6-6"/>
+                    <path d="M15 18l-6-6 6-6" />
                 </svg>
             </button>
         </div>
@@ -46,13 +218,7 @@
                 </svg>
                 <span>Dashboard</span>
             </a>
-            <a href="/inventory" class="nav-item {% if active == 'inventory' %}active{% endif %}" title="Inventário">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="3" width="20" height="18" rx="2" />
-                    <path d="M2 8h20M8 8v13" />
-                </svg>
-                <span>Inventário</span>
-            </a>
+
             <a href="/gmud" class="nav-item {% if active == 'gmud' %}active{% endif %}" title="GMUDs">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
@@ -73,6 +239,15 @@
                 </svg>
                 <span>Relatórios</span>
             </a>
+
+            <a href="/vulnerabilities" class="nav-item {% if active == 'vulnerabilities' %}active{% endif %}"
+                title="Gestão de Vulnerabilidades">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span>Cyber Security</span>
+            </a>
         </div>
 
         <div class="sidebar-footer">
@@ -86,16 +261,17 @@
             </button>
             <div class="import-status" id="importStatus"></div>
             {% if current_user.is_authenticated %}
-            <div class="nav-item" style="cursor:default;opacity:0.6;padding:7px 12px" title="{{ current_user.display_name }}">
+            <div class="nav-item" style="cursor:default;opacity:0.6;padding:7px 12px"
+                title="{{ current_user.display_name }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
                 </svg>
                 <span>{{ current_user.display_name }}</span>
             </div>
             <a href="/logout" class="nav-item" title="Sair" style="padding:7px 12px">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
                 </svg>
                 <span>Sair</span>
             </a>

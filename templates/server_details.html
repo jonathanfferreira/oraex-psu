@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title_suffix %} — Detalhes do Servidor{% endblock %}
+{% block page_title %}Detalhes do Servidor{% endblock %}
+{% block page_subtitle %}Visão 360º de {{ server.hostname }}{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="mb-6">
+        <a href="/cmdb-full" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:6px">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Voltar para CMDB Full
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Main Info Card -->
+        <div class="card md:col-span-2">
+            <div class="card-header flex justify-between items-center">
+                <h3>Informações Principais</h3>
+                <span class="badge {{ 'badge-blue' if server.client == 'GetNet' else 'badge-red' }}">{{ server.client or
+                    'N/A' }}</span>
+            </div>
+            <div class="card-body grid grid-cols-2 gap-4">
+                <div class="info-group">
+                    <label>Hostname</label>
+                    <div class="font-mono text-lg font-bold">{{ server.hostname }}</div>
+                    {% if server.oracle_standby %}
+                    <div class="text-xs text-muted mt-1">Standby: {{ server.oracle_standby }}</div>
+                    {% endif %}
+                </div>
+                <div class="info-group">
+                    <label>IP Address</label>
+                    <div class="font-mono">{{ server.ip_service or server.ip_backup or '-' }}</div>
+                </div>
+                <div class="info-group">
+                    <label>Environment</label>
+                    <div>{{ server.environment }}</div>
+                </div>
+                <div class="info-group">
+                    <label>App/Product</label>
+                    <div>{{ server.system_product or '-' }}</div>
+                </div>
+                <div class="info-group">
+                    <label>Database</label>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold">{{ server.db_type or 'Oracle' }}</span>
+                        <span class="text-muted">{{ server.oracle_psu or server.db_version or '' }}</span>
+                    </div>
+                </div>
+                <div class="info-group">
+                    <label>Status</label>
+                    <div>
+                        <span
+                            class="status-badge {{ 'status-ok' if server.status in ['Ativo', 'Running'] else 'status-warning' }}">
+                            {{ server.status or 'N/A' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Oracle Specifics Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Detalhes Operacionais</h3>
+            </div>
+            <div class="card-body flex flex-col gap-4">
+                <div class="info-group">
+                    <label>Janela de Manutenção</label>
+                    {% if server.oracle_start and server.oracle_end %}
+                    <div class="janela-box">
+                        <div class="text-lg font-bold">{{ server.oracle_start }}</div>
+                        <div class="text-sm text-muted">até</div>
+                        <div class="text-lg font-bold">{{ server.oracle_end }}</div>
+                    </div>
+                    {% else %}
+                    <div class="text-muted italic">Não definida</div>
+                    {% endif %}
+                </div>
+                <div class="info-group">
+                    <label>Contato Primário</label>
+                    <div>{{ server.oracle_contact or server.primary_contact or '-' }}</div>
+                </div>
+                <div class="info-group">
+                    <label>Observações</label>
+                    <div class="text-sm bg-black/20 p-3 rounded border border-white/5">
+                        {{ server.oracle_observation or 'Nenhuma observação registrada.' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GMUD Timeline -->
+    <div class="mt-8">
+        <h3 class="mb-4 text-xl font-bold flex items-center gap-2">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+            </svg>
+            Histórico de GMUDs
+        </h3>
+
+        {% if gmuds %}
+        <div class="timeline">
+            {% for gmud in gmuds %}
+            <div class="timeline-item">
+                <div class="timeline-date">
+                    <div class="font-bold text-lg">{{ gmud.start_date.split(' ')[0] if gmud.start_date else 'Data N/A'
+                        }}</div>
+                    <div class="text-sm text-muted">{{ gmud.change_number }}</div>
+                </div>
+                <div class="timeline-content card">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-bold text-lg">{{ gmud.title }}</h4>
+                        <span class="status-badge status-{{ 'ok' if 'Sucesso' in gmud.status else 'warning' }}">{{
+                            gmud.status }}</span>
+                    </div>
+                    <p class="text-muted text-sm mb-2">{{ gmud.observation or 'Sem observações.' }}</p>
+                    <div class="text-xs text-muted flex gap-4">
+                        <span>👤 {{ gmud.assigned_to or 'N/A' }}</span>
+                        <span>📅 {{ gmud.start_date }} - {{ gmud.end_date }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card p-8 text-center text-muted">
+            <p>Nenhuma GMUD encontrada para este servidor.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .janela-box {
+        background: rgba(var(--accent-rgb), 0.1);
+        border: 1px solid rgba(var(--accent-rgb), 0.2);
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 20px;
+        border-left: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 24px;
+        padding-left: 20px;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -25px;
+        /* Adjust based on border width */
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        background: var(--accent-color);
+        border-radius: 50%;
+        border: 2px solid var(--bg-color);
+    }
+</style>
+{% endblock %}

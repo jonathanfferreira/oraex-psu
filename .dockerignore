@@ -1,0 +1,33 @@
+# Ignorar banco de dados (vai persistir no GCS)
+oraex.db
+
+# Ignorar planilhas Excel (upload via browser)
+*.xlsm
+*.xlsx
+*.xls
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Sistema
+.git/
+.gitignore
+.env
+
+# Arquivos de análise/temporários
+analysis_result.txt
+analyze_sheets.py
+cmdb_getnet_cols.txt
+cmdb_latam_cols.txt
+
+# Docker compose (não necessário no build)
+docker-compose.yml
+
+# Scripts de deploy
+deploy.sh
+
+# IDE
+.vscode/
+.idea/

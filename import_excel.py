@@ -213,15 +213,54 @@ def import_gmuds(wb, conn):
             if not any(vals[:10]):
                 continue
 
-            # Columns vary slightly per month sheet, but the main pattern is:
+            # Columns vary per month sheet, but base pattern (cols 1-13):
             # A: Cliente, B: Tipo BD, C: Entorno, D: Status, E: Dia,
             # F: Data Início, G: Data Término, H: GMUD, I: Título,
             # J: Designado a, K: Observação, L: Vulnerabilidade, M: Aberto Por
+            #
+            # Extended cols (Jul, Ago, Out, Nov):
+            # L: Vulnerabilidade Antes, M: Vulnerabilidade Após,
+            # N: Código fechamento, O: Replanejar?, P: Nova Data Início,
+            # Q: Nova Data Fim, R: Nova GMUD
+
+            # Detect extended layout: cols 12+ have "Antes/Após" pattern
+            # In extended sheets, col 12 = Vuln Antes, col 13 = Vuln Após
+            # In classic sheets, col 12 = Vulnerabilidade, col 13 = Aberto Por
+            num_cols = len(vals)
+            is_extended = num_cols > 13 and any(
+                safe_str(vals[i]) for i in range(13, min(18, num_cols))
+            )
+
+            if is_extended:
+                # Extended layout (Jul, Ago, Out, Nov)
+                vulnerability = ""  # No single "vulnerability" field
+                opened_by = ""     # No "opened_by" in extended layout
+                vuln_before = safe_str(vals[11]) if num_cols > 11 else ""
+                vuln_after = safe_str(vals[12]) if num_cols > 12 else ""
+                closing_code = safe_str(vals[13]) if num_cols > 13 else ""
+                needs_replan = safe_str(vals[14]) if num_cols > 14 else ""
+                new_start = safe_datetime(vals[15]) if num_cols > 15 else ""
+                new_end = safe_datetime(vals[16]) if num_cols > 16 else ""
+                new_gmud = safe_str(vals[17]) if num_cols > 17 else ""
+            else:
+                # Classic layout (Fev-Jun, Dez, Jan, Fev-26)
+                vulnerability = safe_str(vals[11]) if num_cols > 11 else ""
+                opened_by = safe_str(vals[12]) if num_cols > 12 else ""
+                vuln_before = ""
+                vuln_after = ""
+                closing_code = ""
+                needs_replan = ""
+                new_start = ""
+                new_end = ""
+                new_gmud = ""
+
             cursor.execute("""
                 INSERT INTO gmuds (year, month, client, db_type, environment, status,
                     day_of_week, start_date, end_date, change_number, title,
-                    assigned_to, observation, vulnerability, opened_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    assigned_to, observation, vulnerability, opened_by,
+                    vulnerability_before, vulnerability_after, closing_code,
+                    needs_replan, new_start_date, new_end_date, new_gmud)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 year,
                 month,
@@ -235,9 +274,16 @@ def import_gmuds(wb, conn):
                 safe_str(vals[7]),   # H: GMUD
                 safe_str(vals[8]),   # I: Título
                 safe_str(vals[9]),   # J: Designado a
-                safe_str(vals[10]) if len(vals) > 10 else "",  # K: Observação
-                safe_str(vals[11]) if len(vals) > 11 else "",  # L: Vulnerabilidade
-                safe_str(vals[12]) if len(vals) > 12 else "",  # M: Aberto Por
+                safe_str(vals[10]) if num_cols > 10 else "",  # K: Observação
+                vulnerability,
+                opened_by,
+                vuln_before,
+                vuln_after,
+                closing_code,
+                needs_replan,
+                new_start,
+                new_end,
+                new_gmud,
             ))
             count += 1
 

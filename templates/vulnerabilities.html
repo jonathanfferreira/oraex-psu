@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+
+
+
+<div id="cyber-security-dashboard" class="max-w-7xl mx-auto pb-12">
+
+    <!-- Brutalist Header -->
+    <div
+        class="mb-10 brutal-box bg-neo-black text-white p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+        <div class="z-10 relative">
+            <h1 class="text-4xl md:text-5xl font-black tracking-tighter text-white uppercase flex items-center gap-3">
+                <span class="text-neo-acid">>_</span> Security.HUD
+            </h1>
+            <p class="text-gray-400 mt-2 tech-font text-sm uppercase">Qualys Integrated • Live Threat Assessment</p>
+        </div>
+        <div class="z-10">
+            <span
+                class="inline-block bg-neo-danger text-white tech-font text-xs font-bold px-3 py-2 border-2 border-white neo-shadow-sm uppercase tracking-widest">
+                System: Active
+            </span>
+        </div>
+        <!-- Abstract BG Element -->
+        <div class="absolute -right-20 -bottom-20 opacity-10 pointer-events-none">
+            <svg width="300" height="300" viewBox="0 0 100 100" class="text-white fill-current animate-pulse"
+                style="animation-duration: 4s;">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="2" />
+                <line x1="50" y1="10" x2="50" y2="90" stroke="currentColor" stroke-width="2" />
+                <line x1="10" y1="50" x2="90" y2="50" stroke="currentColor" stroke-width="2" />
+            </svg>
+        </div>
+    </div>
+
+    <!-- Asymmetric Top Metrics (90/10 Focus) -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
+
+        <!-- MASSIVE FOCUS METRIC -->
+        <div class="lg:col-span-2 brutal-box p-8 bg-neo-danger text-white flex flex-col justify-between">
+            <div>
+                <h3
+                    class="tech-font text-xs md:text-sm font-bold uppercase opacity-90 tracking-widest mb-1 border-b-2 border-white/30 pb-2 inline-block">
+                    /// Critical / High Exposures</h3>
+                <p class="text-6xl md:text-8xl font-black mt-4 tracking-tighter" id="stat-critical">----</p>
+            </div>
+            <div
+                class="mt-6 tech-font text-xs uppercase bg-black text-white px-3 py-2 self-start border border-white/20">
+                Action Required Immediately <span class="animate-pulse text-neo-danger ml-2">●</span>
+            </div>
+        </div>
+
+        <!-- Secondary Metrics -->
+        <div class="brutal-box p-6 flex flex-col justify-center bg-white">
+            <h3 class="tech-font text-xs font-bold text-gray-500 uppercase tracking-widest">Vulnerable DB Hosts</h3>
+            <p class="text-4xl md:text-5xl font-black text-neo-black mt-2" id="stat-hosts">--</p>
+            <div class="w-full h-2 bg-gray-100 mt-4 border border-neo-black">
+                <div class="h-full bg-neo-black w-[100%]"></div>
+            </div>
+        </div>
+
+        <div class="brutal-box p-6 flex flex-col justify-center bg-neo-acid text-neo-black">
+            <h3 class="tech-font text-xs font-bold uppercase tracking-widest border-b-2 border-neo-black pb-1"
+                style="border-bottom-color: rgba(15, 23, 42, 0.2) !important;">Top Risk Environment</h3>
+            <p class="text-3xl lg:text-4xl font-black mt-3 uppercase break-all" id="stat-env">----</p>
+            <svg class="w-8 h-8 mt-4 opacity-50 text-neo-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z">
+                </path>
+            </svg>
+        </div>
+
+    </div>
+
+    <!-- Experimental Staggered Section -->
+    <div class="flex flex-col lg:flex-row gap-8 mb-12 items-stretch">
+
+        <!-- Bar Chart Area: Brutalist Styling -->
+        <div class="flex-grow brutal-box p-8 bg-white flex flex-col relative w-full lg:w-2/3">
+            <div
+                class="absolute top-0 right-0 w-12 h-12 border-b-2 border-l-2 border-neo-black bg-gray-100 flex items-center justify-center tech-font text-xs font-bold text-neo-black">
+                .CHT</div>
+            <h3 class="brutal-title text-xl font-bold text-neo-black mb-8 uppercase flex items-center gap-3">
+                <span class="w-4 h-4 bg-neo-warning inline-block"></span> Severity Breakdown
+            </h3>
+
+            <div class="relative h-64 w-full flex-grow flex items-end justify-between gap-1 md:gap-4 pt-12 border-b-4 border-neo-black"
+                id="severity-chart">
+                <div class="text-center tech-font text-sm text-gray-500 w-full animate-pulse">Initializing Data...</div>
+            </div>
+        </div>
+
+        <!-- Warning Log / Top 10 -->
+        <div class="w-full lg:w-1/3 brutal-box bg-neo-black text-white p-6 relative">
+            <h3
+                class="tech-font text-sm font-bold text-neo-acid mb-6 uppercase tracking-widest flex items-center gap-2">
+                [!] Priority Targets
+            </h3>
+            <div class="overflow-y-auto h-80 custom-scrollbar pr-2">
+                <ul id="top-hosts-list" class="space-y-4">
+                    <li class="text-center tech-font text-sm text-gray-500 py-10 animate-pulse">Fetching DB targets...
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table (Dense, Sharp, Monospaced) -->
+    <div class="brutal-box p-0 bg-white overflow-hidden relative border-t-8 border-t-neo-black">
+
+        <div
+            class="px-6 py-6 border-b-4 border-neo-black bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <h2 class="brutal-title text-2xl font-bold text-neo-black flex items-center gap-3">
+                <div class="w-6 h-6 border-2 border-neo-black bg-white flex items-center justify-center">
+                    <div class="w-2 h-2 bg-neo-black"></div>
+                </div>
+                Detection Matrix
+            </h2>
+
+            <div class="w-full md:w-auto flex">
+                <input type="text" id="searchInput" placeholder=">> SEARCH HOST / QID "
+                    class="w-full md:w-80 px-4 py-3 border-2 border-neo-black bg-white text-neo-black tech-font text-sm font-bold placeholder-gray-400 focus:outline-none focus:bg-neo-acid rounded-none transition-colors"
+                    style="--tw-bg-opacity: 0.1;">
+                <div class="w-12 border-y-2 border-r-2 border-neo-black bg-neo-black flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="3"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y-2 divide-neo-black" id="vulnTable">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th scope="col"
+                            class="px-6 py-4 text-left tech-font text-xs font-black text-neo-black uppercase border-r-2 border-neo-black">
+                            QID</th>
+                        <th scope="col"
+                            class="px-6 py-4 text-left tech-font text-xs font-black text-neo-black uppercase border-r-2 border-neo-black">
+                            Level</th>
+                        <th scope="col"
+                            class="px-6 py-4 text-left tech-font text-xs font-black text-neo-black uppercase border-r-2 border-neo-black">
+                            Host Target</th>
+                        <th scope="col"
+                            class="px-6 py-4 text-left tech-font text-xs font-black text-neo-black uppercase border-r-2 border-neo-black">
+                            Vulnerability Title</th>
+                        <th scope="col"
+                            class="px-6 py-4 text-left tech-font text-xs font-black text-neo-black uppercase border-r-2 border-neo-black hidden lg:table-cell">
+                            Env</th>
+                        <th scope="col"
+                            class="px-6 py-4 text-left tech-font text-xs font-black text-neo-black uppercase hidden xl:table-cell">
+                            CMDB Status</th>
+                    </tr>
+                </thead>
+                <tbody id="vulnTableBody" class="bg-white divide-y-2 divide-gray-200 tech-font text-sm">
+                    <tr>
+                        <td colspan="6" class="px-6 py-16 text-center text-neo-black font-bold">
+                            <span class="animate-pulse">Loading Matrix Data...</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div
+            class="px-6 py-4 border-t-4 border-neo-black bg-gray-50 flex flex-col md:flex-row items-center justify-between tech-font text-xs font-bold uppercase text-neo-black">
+            <span id="showingText" class="bg-neo-black text-neo-acid px-3 py-1">Rows: 0</span>
+            <span class="mt-2 md:mt-0 text-gray-500">LIMIT 500 ROWS MAX</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        loadVulnStats();
+        loadVulnList();
+
+        document.getElementById('searchInput').addEventListener('input', function (e) {
+            const term = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#vulnTableBody tr');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(term)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('showingText').textContent = `Rows: ${visibleCount}`;
+        });
+    });
+
+    async function loadVulnStats() {
+        try {
+            const res = await fetch('/api/vulnerabilities/stats');
+            const data = await res.json();
+
+            if (data.error) throw new Error(data.error);
+
+            document.getElementById('stat-hosts').textContent = data.total_db_hosts_vulnerable || '0';
+
+            let critCount = 0;
+            let envCounts = {};
+            let maxEnv = 'NOT FOUND';
+            let maxEnvCount = 0;
+
+            data.severity_breakdown.forEach(s => {
+                if (s.severity === '5' || s.severity === '4') critCount += s.count;
+            });
+            document.getElementById('stat-critical').textContent = critCount;
+
+            const hostList = document.getElementById('top-hosts-list');
+            if (data.top_vulnerable_hosts.length === 0) {
+                hostList.innerHTML = '<li class="text-center tech-font text-gray-500 py-4">NO CRITICAL TARGETS.</li>';
+            } else {
+                hostList.innerHTML = '';
+                data.top_vulnerable_hosts.forEach((h, idx) => {
+                    envCounts[h.environment] = (envCounts[h.environment] || 0) + h.count;
+
+                    hostList.innerHTML += `
+                <li class="flex items-center justify-between p-3 border-b border-gray-700 transition-colors group" style="background-color: transparent;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'" onmouseout="this.style.backgroundColor='transparent'">
+                    <div class="flex items-center gap-3">
+                        <div class="text-neo-acid font-black tech-font group-hover:underline">
+                            0${idx + 1}
+                        </div>
+                        <div>
+                            <p class="font-bold text-white text-sm uppercase">${h.asset_name}</p>
+                            <p class="tech-font text-xs text-gray-400 mt-1">${h.db_type || 'UNK'} // ${h.environment}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block px-2 py-1 text-xs font-bold bg-neo-danger text-white tech-font border border-white">
+                            ${h.count}
+                        </span>
+                    </div>
+                </li>
+                `;
+                });
+
+                for (const [env, count] of Object.entries(envCounts)) {
+                    if (count > maxEnvCount && env !== 'null' && env !== '') {
+                        maxEnvCount = count;
+                        maxEnv = env;
+                    }
+                }
+                document.getElementById('stat-env').textContent = maxEnv;
+            }
+
+            const chartContainer = document.getElementById('severity-chart');
+            if (data.severity_breakdown.length > 0) {
+                chartContainer.innerHTML = '';
+                const maxVal = Math.max(...data.severity_breakdown.map(s => s.count));
+
+                const colors = {
+                    '5': 'bg-neo-danger',
+                    '4': 'bg-neo-warning',
+                    '3': 'bg-neo-yellow',
+                    '2': 'bg-neo-acid',
+                    '1': 'bg-gray-300'
+                };
+                const labels = { '5': 'URG', '4': 'CRIT', '3': 'HIGH', '2': 'MED', '1': 'INF' };
+                const sortedBreakdown = [...data.severity_breakdown].sort((a, b) => parseInt(b.severity) - parseInt(a.severity));
+
+                sortedBreakdown.forEach(s => {
+                    const pct = Math.max((s.count / (maxVal || 1)) * 100, 5);
+                    const bgColor = colors[s.severity] || 'bg-gray-400';
+                    const lbl = labels[s.severity] || `S${s.severity}`;
+
+                    chartContainer.innerHTML += `
+                <div class="flex flex-col items-center group w-1/5 relative">
+                    <div class="absolute -top-10 left-1/2 -translate-x-1/2 text-sm font-black text-neo-black opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-white border-2 border-neo-black px-2 py-1 z-20 brutal-box">
+                        ${s.count}
+                    </div>
+                    <div class="relative w-full h-[200px] flex items-end justify-center group-hover-bg-neo-acid">
+                        <div class="w-[80%] max-w-[60px] ${bgColor} border-2 border-b-0 border-neo-black transition-all duration-500 ease-out origin-bottom relative neo-shadow-x" style="height: 0%;" data-height="${pct}%" onmouseover="this.style.backgroundColor='var(--brand-black)'" onmouseout="this.style.backgroundColor=''">
+                        </div>
+                    </div>
+                    <div class="mt-4 tech-font text-xs font-bold text-neo-black border-t-2 border-neo-black w-full text-center pt-2">${lbl}</div>
+                </div>
+                `;
+                });
+
+                setTimeout(() => {
+                    chartContainer.querySelectorAll('[data-height]').forEach(el => {
+                        el.style.height = el.getAttribute('data-height');
+                    });
+                }, 100);
+
+            } else {
+                chartContainer.innerHTML = '<div class="text-center tech-font text-gray-400 w-full font-bold">>> NO DB DATA <<</div>';
+            }
+
+        } catch (e) {
+            console.error("Stats Error:", e);
+        }
+    }
+
+    async function loadVulnList() {
+        const tbody = document.getElementById('vulnTableBody');
+        try {
+            const res = await fetch('/api/vulnerabilities');
+            const data = await res.json();
+
+            if (data.error) throw new Error(data.error);
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500 uppercase font-bold">No Records Found</td></tr>';
+                document.getElementById('showingText').textContent = `Rows: 0`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach(v => {
+                const sevColors = {
+                    '5': 'bg-neo-danger text-white border-neo-black',
+                    '4': 'bg-neo-warning text-white border-neo-black',
+                    '3': 'bg-neo-yellow text-neo-black border-neo-black',
+                    '2': 'bg-neo-acid text-neo-black border-neo-black',
+                    '1': 'bg-gray-200 text-neo-black border-neo-black'
+                };
+                const sc = sevColors[v.severity] || sevColors['1'];
+
+                const tr = document.createElement('tr');
+                tr.className = "hover-bg-neo-acid-light transition-colors group";
+                tr.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-xs font-black text-neo-black hidden md:table-cell border-r-2 border-neo-black group-hover-bg-neo-acid transition-colors">
+                    #${v.qid}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap border-r-2 border-neo-black">
+                    <span class="inline-block px-3 py-1 font-black text-[10px] uppercase border-2 neo-shadow-dark ${sc}">
+                        LVL ${v.severity}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap border-r-2 border-neo-black">
+                    <div class="text-sm font-black text-neo-black uppercase">${v.asset_name}</div>
+                    <div class="text-[10px] text-gray-500 mt-1 uppercase">IP: ${v.asset_ip || '---'} | DB: ${v.db_type || 'UNK'}</div>
+                </td>
+                <td class="px-6 py-4 border-r-2 border-neo-black">
+                    <div class="text-xs font-bold text-neo-black uppercase line-clamp-2" title="${v.title}">
+                        ${v.title}
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-[10px] font-black uppercase text-gray-500 hidden lg:table-cell border-r-2 border-neo-black">
+                    ${v.environment || '---'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap hidden xl:table-cell">
+                    <span class="inline-block px-2 py-1 font-bold text-[10px] uppercase border border-neo-black bg-gray-100 text-neo-black">
+                      ${v.cmdb_status || '---'}
+                    </span>
+                </td>
+            `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('showingText').textContent = `Rows: ${data.length}`;
+
+        } catch (e) {
+            console.error("List Error:", e);
+            tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-10 text-center text-neo-danger font-bold uppercase">> MATRIX ERROR: ${e.message}</td></tr>`;
+        }
+    }
+</script>
+{% endblock %}

@@ -1,29 +1,23 @@
-# Usar imagem oficial leve do Python
-FROM python:3.9-slim
+# Imagem base leve do Python
+FROM python:3.11-slim
 
-# Definir diretório de trabalho
 WORKDIR /app
 
-# Variáveis de ambiente
+# Variáveis de ambiente para produção
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV ORAEX_SECRET_KEY=producao-super-secreta-alterar-isso
+ENV FLASK_DEBUG=false
 
-# Instalar dependências do sistema necessárias (opcional, mas comum)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copiar requirements e instalar dependências Python
+# Instalar dependências Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar o resto do código
+# Copiar código da aplicação
 COPY . .
 
-# Expor a porta 5000
-EXPOSE 5000
+# Cloud Run injeta a variável PORT automaticamente (default: 8080)
+ENV PORT=8080
+EXPOSE 8080
 
-# Comando para rodar a aplicação
-# Usando gunicorn para produção seria melhor, mas para intranet python app.py com host 0.0.0.0 serve
-CMD ["python", "app.py"]
+# Produção: gunicorn com timeout alto para uploads de planilhas grandes
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 4 --timeout 120 app:app
