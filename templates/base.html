@@ -9,20 +9,9 @@
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo-oraex-azul.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
-    <!-- Tailwind CSS Engine for Layout Framework -->
-    <script>
-        tailwind = {
-            corePlugins: {
-                preflight: false
-            }
-        }
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-
     {% block head %}{% endblock %}
 </head>
 
@@ -31,9 +20,9 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <div class="logo-icon bg-neo-acid flex items-center justify-center neo-shadow-sm border-2 border-white"
-                    style="width: 32px; height: 32px; border-radius: 0;">
-                    <span class="tech-font font-black text-neo-black text-xl">>_</span>
+                <div class="logo-icon">
+                    <img src="{{ url_for('static', filename='img/logo-oraex-azul.png') }}" alt="ORAEX"
+                        style="width: 28px; height: 28px; object-fit: contain; border-radius: 6px;">
                 </div>
                 <div class="logo-text">
                     <span class="logo-name">ORAEX</span>
@@ -42,7 +31,7 @@
             </div>
             <button class="toggle-btn" id="sidebarToggle" onclick="toggleSidebar()" title="Recolher menu">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M15 18l-6-6 6-6" />
+                    <path d="M15 18l-6-6 6-6"/>
                 </svg>
             </button>
         </div>
@@ -57,7 +46,13 @@
                 </svg>
                 <span>Dashboard</span>
             </a>
-
+            <a href="/inventory" class="nav-item {% if active == 'inventory' %}active{% endif %}" title="Inventário">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="18" rx="2" />
+                    <path d="M2 8h20M8 8v13" />
+                </svg>
+                <span>Inventário</span>
+            </a>
             <a href="/gmud" class="nav-item {% if active == 'gmud' %}active{% endif %}" title="GMUDs">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
@@ -78,23 +73,6 @@
                 </svg>
                 <span>Relatórios</span>
             </a>
-
-            <a href="/vulnerabilities" class="nav-item {% if active == 'vulnerabilities' %}active{% endif %}"
-                title="Gestão de Vulnerabilidades">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-            </a>
-            {% if current_user.is_authenticated and current_user.role == 'admin' %}
-            <a href="/users" class="nav-item {% if active == 'users' %}active{% endif %}" title="Gestão de Usuários">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <span>Usuários</span>
-            </a>
-            {% endif %}
         </div>
 
         <div class="sidebar-footer">
@@ -108,17 +86,16 @@
             </button>
             <div class="import-status" id="importStatus"></div>
             {% if current_user.is_authenticated %}
-            <div class="nav-item" style="cursor:default;opacity:0.6;padding:7px 12px"
-                title="{{ current_user.display_name }}">
+            <div class="nav-item" style="cursor:default;opacity:0.6;padding:7px 12px" title="{{ current_user.display_name }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
                 </svg>
                 <span>{{ current_user.display_name }}</span>
             </div>
             <a href="/logout" class="nav-item" title="Sair" style="padding:7px 12px">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
                 </svg>
                 <span>Sair</span>
             </a>

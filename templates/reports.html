@@ -5,278 +5,163 @@
 
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 {% endblock %}
 
 {% block content %}
-<div class="header-actions"
-    style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
-    <h3 style="color: var(--text-secondary); margin: 0; font-size: 1.1rem;">Visão Executiva</h3>
 
-    <div style="display: flex; gap: 1rem; align-items: center;">
-        {% if not current_user.client_restriction or current_user.client_restriction == 'none' %}
-        <label style="color: var(--text-muted); font-size: 0.9rem;">Visão Cliente:</label>
-        <select id="reportsClientFilter" onchange="loadReports(this.value)"
-            style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--brand-cyan); border-radius: 4px; outline: none; cursor: pointer; min-width: 150px;">
-            <option value="Todos" style="background:#05050A">Global (Todos)</option>
-            <option value="GetNet" style="background:#05050A">GetNet</option>
-            <option value="PagoNxt" style="background:#05050A">PagoNxt</option>
-        </select>
-        {% else %}
-        <span
-            style="color: var(--brand-cyan); padding: 0.5rem 1rem; background: rgba(0, 136, 238, 0.1); border: 1px solid rgba(0, 136, 238, 0.3); border-radius: 4px; font-weight: bold;">
-            Visão Restrita: {{ current_user.client_restriction }}
-        </span>
-        {% endif %}
+<div class="stats-row" id="statsRow">
+    <div class="stat-mini"><div class="stat-value" id="statServers" style="color:var(--accent-primary)">—</div><div class="stat-label">Servidores Oracle</div></div>
+    <div class="stat-mini"><div class="stat-value" id="statCmdb" style="color:var(--accent-secondary)">—</div><div class="stat-label">CMDB Total</div></div>
+    <div class="stat-mini"><div class="stat-value" id="statGmuds" style="color:var(--warning)">—</div><div class="stat-label">GMUDs Realizadas</div></div>
+    <div class="stat-mini"><div class="stat-value" id="statUpdated" style="color:var(--success)">—</div><div class="stat-label">% Atualizado</div></div>
+    <div class="stat-mini"><div class="stat-value" id="statPending" style="color:var(--danger)">—</div><div class="stat-label">Pendentes</div></div>
+    <div class="stat-mini"><div class="stat-value" id="statTechs" style="color:var(--info)">—</div><div class="stat-label">Tecnologias</div></div>
+</div>
 
-        <button onclick="exportReportToPDF()"
-            style="display: flex; align-items: center; gap: 8px; background: var(--gradient-primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; font-weight: 600; font-size: 0.9rem; font-family: 'Space Mono', monospace; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 136, 238, 0.4); text-transform: uppercase;">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            Exportar PDF
-        </button>
+<div class="chart-card full-width" style="animation-delay:0.15s;margin-bottom:16px">
+    <div class="chart-header"><div><div class="chart-title">🎯 Progresso de Atualização PSU</div><div class="chart-subtitle">Percentual de servidores atualizados por versão</div></div></div>
+    <div id="psuProgress" style="padding:8px 0"></div>
+</div>
+
+<div class="charts-grid">
+    <div class="chart-card" style="animation-delay:0.2s">
+        <div class="chart-header"><div><div class="chart-title">📈 Evolução de GMUDs por Mês</div><div class="chart-subtitle">Tendência de execução de changes</div></div></div>
+        <div class="chart-body"><canvas id="reportMonthly"></canvas></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.25s">
+        <div class="chart-header"><div><div class="chart-title">🌍 Servidores por Entorno</div><div class="chart-subtitle">Ambiente vs distribuição</div></div></div>
+        <div class="chart-body"><canvas id="reportEnvPsu"></canvas></div>
     </div>
 </div>
 
-<div id="reportContainerToExport">
-
-    <div class="stats-row" id="statsRow">
-        <div class="stat-mini">
-            <div class="stat-value" id="statServers" style="color:var(--accent-primary)">—</div>
-            <div class="stat-label">Servidores Oracle</div>
-        </div>
-        <div class="stat-mini">
-            <div class="stat-value" id="statCmdb" style="color:var(--accent-secondary)">—</div>
-            <div class="stat-label">CMDB Total</div>
-        </div>
-        <div class="stat-mini">
-            <div class="stat-value" id="statGmuds" style="color:var(--warning)">—</div>
-            <div class="stat-label">GMUDs Realizadas</div>
-        </div>
-        <div class="stat-mini">
-            <div class="stat-value" id="statUpdated" style="color:var(--success)">—</div>
-            <div class="stat-label">% Atualizado</div>
-        </div>
-        <div class="stat-mini">
-            <div class="stat-value" id="statPending" style="color:var(--danger)">—</div>
-            <div class="stat-label">Pendentes</div>
-        </div>
-        <div class="stat-mini">
-            <div class="stat-value" id="statTechs" style="color:var(--info)">—</div>
-            <div class="stat-label">Tecnologias</div>
-        </div>
+<div class="charts-grid">
+    <div class="chart-card" style="animation-delay:0.3s">
+        <div class="chart-header"><div><div class="chart-title">🗄️ CMDB por Situação</div><div class="chart-subtitle">Status dos bancos de dados no inventário</div></div></div>
+        <div class="chart-body"><canvas id="reportCmdbStatus"></canvas></div>
     </div>
-
-    <div class="chart-card full-width" style="animation-delay:0.15s;margin-bottom:16px">
-        <div class="chart-header">
-            <div>
-                <div class="chart-title">🎯 Progresso de Atualização PSU</div>
-                <div class="chart-subtitle">Percentual de servidores atualizados por versão</div>
-            </div>
-        </div>
-        <div id="psuProgress" style="padding:8px 0"></div>
+    <div class="chart-card" style="animation-delay:0.35s">
+        <div class="chart-header"><div><div class="chart-title">👥 Performance da Equipe</div><div class="chart-subtitle">GMUDs executadas por recurso</div></div></div>
+        <div class="chart-body"><canvas id="reportTeam"></canvas></div>
     </div>
+</div>
 
-    <div class="charts-grid">
-        <div class="chart-card" style="animation-delay:0.2s">
-            <div class="chart-header">
-                <div>
-                    <div class="chart-title">📈 Evolução de GMUDs por Mês</div>
-                    <div class="chart-subtitle">Tendência de execução de changes</div>
-                </div>
-            </div>
-            <div class="chart-body"><canvas id="reportMonthly"></canvas></div>
-        </div>
-        <div class="chart-card" style="animation-delay:0.25s">
-            <div class="chart-header">
-                <div>
-                    <div class="chart-title">🌍 Servidores por Entorno</div>
-                    <div class="chart-subtitle">Ambiente vs distribuição</div>
-                </div>
-            </div>
-            <div class="chart-body"><canvas id="reportEnvPsu"></canvas></div>
-        </div>
+<div class="charts-grid">
+    <div class="chart-card full-width" style="animation-delay:0.4s">
+        <div class="chart-header"><div><div class="chart-title">📊 CMDB — Distribuição por Entorno e Tecnologia</div><div class="chart-subtitle">Visão consolidada de todos os bancos de dados</div></div></div>
+        <div class="chart-body" style="min-height:280px"><canvas id="reportCmdbEnv"></canvas></div>
     </div>
-
-    <div class="charts-grid">
-        <div class="chart-card" style="animation-delay:0.3s">
-            <div class="chart-header">
-                <div>
-                    <div class="chart-title">🗄️ CMDB por Situação</div>
-                    <div class="chart-subtitle">Status dos bancos de dados no inventário</div>
-                </div>
-            </div>
-            <div class="chart-body"><canvas id="reportCmdbStatus"></canvas></div>
-        </div>
-        <div class="chart-card" style="animation-delay:0.35s">
-            <div class="chart-header">
-                <div>
-                    <div class="chart-title">👥 Performance da Equipe</div>
-                    <div class="chart-subtitle">GMUDs executadas por recurso</div>
-                </div>
-            </div>
-            <div class="chart-body"><canvas id="reportTeam"></canvas></div>
-        </div>
-    </div>
-
-    <div class="charts-grid">
-        <div class="chart-card full-width" style="animation-delay:0.4s">
-            <div class="chart-header">
-                <div>
-                    <div class="chart-title">📊 CMDB — Distribuição por Entorno e Tecnologia</div>
-                    <div class="chart-subtitle">Visão consolidada de todos os bancos de dados</div>
-                </div>
-            </div>
-            <div class="chart-body" style="min-height:280px"><canvas id="reportCmdbEnv"></canvas></div>
-        </div>
-    </div>
-
-</div> <!-- FECHA reportContainerToExport -->
+</div>
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-        applyChartDefaults();
-        await loadReports();
+document.addEventListener('DOMContentLoaded', async () => {
+    applyChartDefaults();
+    try {
+        const data = await API.dashboard();
+        renderStats(data);
+        renderPsuProgress(data);
+        renderMonthlyReport(data);
+        renderEnvPsuChart(data);
+        renderCmdbStatusChart(data);
+        renderTeamChart(data);
+        renderCmdbEnvChart(data);
+    } catch (e) {
+        console.error('Reports error:', e);
+        showToast('Erro ao carregar relatórios: ' + e.message, 'error');
+    }
+});
+
+function renderStats(data) {
+    animateValue(document.getElementById('statServers'), 0, data.total_servers);
+    animateValue(document.getElementById('statCmdb'), 0, data.total_cmdb);
+    animateValue(document.getElementById('statGmuds'), 0, data.total_gmuds);
+    const updated = data.servers_by_psu.filter(s => s.psu_version && (s.psu_version.includes('19.30')||s.psu_version.includes('19.29')||s.psu_version.includes('19.28'))).reduce((sum,s)=>sum+s.cnt,0);
+    const pct = data.total_servers > 0 ? Math.round(updated/data.total_servers*100) : 0;
+    document.getElementById('statUpdated').textContent = pct + '%';
+    const pending = data.servers_by_psu.filter(s=>s.psu_version&&!s.psu_version.includes('19.30')&&!s.psu_version.includes('19.29')&&!s.psu_version.includes('19.28')).reduce((sum,s)=>sum+s.cnt,0);
+    animateValue(document.getElementById('statPending'), 0, pending);
+    document.getElementById('statTechs').textContent = data.cmdb_by_type.length;
+}
+
+function renderPsuProgress(data) {
+    const c = document.getElementById('psuProgress');
+    const total = data.total_servers || 1;
+    const sorted = [...data.servers_by_psu].filter(s=>s.psu_version&&s.psu_version.trim()).sort((a,b)=>b.cnt-a.cnt);
+    if (!sorted.length) { c.innerHTML = '<div class="text-center">Sem dados PSU</div>'; return; }
+    const colors = {'19.30':'var(--success)','19.29':'#10b981','19.28':'#10b981','19.27':'var(--warning)','19.26':'#f59e0b','19.25':'#f97316','19.24':'var(--danger)','19.23':'var(--danger)','19.20':'var(--danger)','12.0':'#ef4444'};
+    c.innerHTML = sorted.map(s => {
+        const pct = Math.round(s.cnt/total*100);
+        const color = Object.entries(colors).find(([k])=>s.psu_version.includes(k));
+        const bc = color ? color[1] : 'var(--accent-primary)';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:5px 0;border-bottom:1px solid var(--border-subtle)"><span style="min-width:70px;font-family:monospace;font-weight:600;font-size:0.8rem;color:var(--text-primary)">${s.psu_version}</span><div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:${pct}%;background:${bc}"></div></div><span style="min-width:36px;text-align:right;font-weight:700;font-size:0.8rem;color:var(--text-primary)">${s.cnt}</span><span style="min-width:36px;text-align:right;font-size:0.7rem;color:var(--text-muted)">${pct}%</span></div>`;
+    }).join('');
+}
+
+function renderMonthlyReport(data) {
+    const el = document.getElementById('reportMonthly');
+    if (!el) return;
+    const months = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const sorted = data.gmuds_by_month.sort((a,b)=>a.year*100+a.month-(b.year*100+b.month));
+    if (!sorted.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados mensais</p></div>'; return; }
+    const ctx = el.getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: { labels: sorted.map(m=>`${months[m.month]}/${String(m.year).slice(-2)}`), datasets: [{ label:'GMUDs', data: sorted.map(m=>m.cnt), borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,0.1)', fill:true, tension:0.4, pointRadius:4, pointHoverRadius:6, pointBackgroundColor:'#6366f1', pointBorderColor:'rgba(10,10,26,0.8)', pointBorderWidth:2 }] },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{precision:0}}} }
     });
+}
 
-    async function loadReports(clientFilter = null) {
-        try {
-            if (!clientFilter) {
-                const select = document.getElementById('reportsClientFilter');
-                clientFilter = select ? select.value : 'Todos';
-            }
-            const data = await API.dashboard(clientFilter);
-            renderStats(data);
-            renderPsuProgress(data);
-            renderMonthlyReport(data);
-            renderEnvPsuChart(data);
-            renderCmdbStatusChart(data);
-            renderTeamChart(data);
-            renderCmdbEnvChart(data);
-        } catch (e) {
-            console.error('Reports error:', e);
-            showToast('Erro ao carregar relatórios: ' + e.message, 'error');
-        }
-    }
+function renderEnvPsuChart(data) {
+    const el = document.getElementById('reportEnvPsu');
+    if (!el) return;
+    const envData = data.servers_by_env.filter(e=>e.environment&&e.environment.trim());
+    if (!envData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados de ambiente</p></div>'; return; }
+    const envColors = {'Produção':'#ef4444','Homologação':'#f59e0b','Desenvolvimento':'#3b82f6','Transacional':'#a855f7'};
+    new Chart(el.getContext('2d'), {
+        type: 'polarArea',
+        data: { labels: envData.map(e=>e.environment), datasets: [{ data: envData.map(e=>e.cnt), backgroundColor: envData.map(e=>(envColors[e.environment]||'#6366f1')+'40'), borderColor: envData.map(e=>envColors[e.environment]||'#6366f1'), borderWidth:2 }] },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right',labels:{padding:10}}} }
+    });
+}
 
-    function exportReportToPDF() {
-        const element = document.getElementById('reportContainerToExport');
-        const opt = {
-            margin: 0.5,
-            filename: 'Relatorio_Executivo_ORAEX.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
-        };
-        html2pdf().set(opt).from(element).save();
-    }
+function renderCmdbStatusChart(data) {
+    const el = document.getElementById('reportCmdbStatus');
+    if (!el) return;
+    const sd = data.cmdb_by_status.filter(s=>s.status&&s.status.trim());
+    if (!sd.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados CMDB</p></div>'; return; }
+    const sc = {'Ativo':'#10b981','Sendo descontinuado':'#f59e0b','Em Construção':'#3b82f6','Em Elaboração':'#a855f7','Descontinuado':'#ef4444'};
+    new Chart(el.getContext('2d'), {
+        type: 'doughnut',
+        data: { labels: sd.map(s=>s.status), datasets: [{ data: sd.map(s=>s.cnt), backgroundColor: sd.map(s=>sc[s.status]||'#6366f1'), hoverOffset:8 }] },
+        options: { responsive:true, maintainAspectRatio:false, cutout:'60%', plugins:{legend:{position:'right',labels:{padding:10,font:{size:10}}}} }
+    });
+}
 
-    function renderStats(data) {
-        animateValue(document.getElementById('statServers'), 0, data.total_servers);
-        animateValue(document.getElementById('statCmdb'), 0, data.total_cmdb);
-        animateValue(document.getElementById('statGmuds'), 0, data.total_gmuds);
-        const updated = data.servers_by_psu.filter(s => s.psu_version && (s.psu_version.includes('19.30') || s.psu_version.includes('19.29') || s.psu_version.includes('19.28'))).reduce((sum, s) => sum + s.cnt, 0);
-        const pct = data.total_servers > 0 ? Math.round(updated / data.total_servers * 100) : 0;
-        document.getElementById('statUpdated').textContent = pct + '%';
-        const pending = data.servers_by_psu.filter(s => s.psu_version && !s.psu_version.includes('19.30') && !s.psu_version.includes('19.29') && !s.psu_version.includes('19.28')).reduce((sum, s) => sum + s.cnt, 0);
-        animateValue(document.getElementById('statPending'), 0, pending);
-        document.getElementById('statTechs').textContent = data.cmdb_by_type.length;
-    }
+function renderTeamChart(data) {
+    const el = document.getElementById('reportTeam');
+    if (!el) return;
+    const team = data.gmuds_by_person.filter(t=>t.assigned_to&&t.assigned_to.trim()).slice(0,8);
+    if (!team.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados de equipe</p></div>'; return; }
+    new Chart(el.getContext('2d'), {
+        type: 'bar',
+        data: { labels: team.map(t=>t.assigned_to.length>16?t.assigned_to.slice(0,16)+'…':t.assigned_to), datasets: [{ label:'GMUDs', data: team.map(t=>t.cnt), backgroundColor: CHART_COLORS.palette.slice(0,team.length), borderRadius:6, borderSkipped:false, barPercentage:0.6 }] },
+        options: { responsive:true, maintainAspectRatio:false, indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true,ticks:{precision:0}}} }
+    });
+}
 
-    function renderPsuProgress(data) {
-        const c = document.getElementById('psuProgress');
-        const total = data.total_servers || 1;
-        const sorted = [...data.servers_by_psu].filter(s => s.psu_version && s.psu_version.trim()).sort((a, b) => b.cnt - a.cnt);
-        if (!sorted.length) { c.innerHTML = '<div class="text-center">Sem dados PSU</div>'; return; }
-        const colors = { '19.30': 'var(--success)', '19.29': '#10b981', '19.28': '#10b981', '19.27': 'var(--warning)', '19.26': '#f59e0b', '19.25': '#f97316', '19.24': 'var(--danger)', '19.23': 'var(--danger)', '19.20': 'var(--danger)', '12.0': '#ef4444' };
-        c.innerHTML = sorted.map(s => {
-            const pct = Math.round(s.cnt / total * 100);
-            const color = Object.entries(colors).find(([k]) => s.psu_version.includes(k));
-            const bc = color ? color[1] : 'var(--accent-primary)';
-            return `<div style="display:flex;align-items:center;gap:12px;padding:5px 0;border-bottom:1px solid var(--border-subtle)"><span style="min-width:70px;font-family:monospace;font-weight:600;font-size:0.8rem;color:var(--text-primary)">${s.psu_version}</span><div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:${pct}%;background:${bc}"></div></div><span style="min-width:36px;text-align:right;font-weight:700;font-size:0.8rem;color:var(--text-primary)">${s.cnt}</span><span style="min-width:36px;text-align:right;font-size:0.7rem;color:var(--text-muted)">${pct}%</span></div>`;
-        }).join('');
-    }
-
-    function renderMonthlyReport(data) {
-        const el = document.getElementById('reportMonthly');
-        if (!el) return;
-        let existing = Chart.getChart(el); if (existing) existing.destroy();
-
-        const months = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        const sorted = data.gmuds_by_month.sort((a, b) => a.year * 100 + a.month - (b.year * 100 + b.month));
-        if (!sorted.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados mensais</p></div>'; return; }
-        const ctx = el.getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: { labels: sorted.map(m => `${months[m.month]}/${String(m.year).slice(-2)}`), datasets: [{ label: 'GMUDs', data: sorted.map(m => m.cnt), borderColor: '#0F172A', backgroundColor: 'rgba(163, 230, 53, 0.6)', fill: true, tension: 0, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: '#a3e635', pointBorderColor: '#0F172A', pointBorderWidth: 2, borderWidth: 2 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0, font: { family: 'Space Mono' } } }, x: { ticks: { font: { family: 'Space Mono' } } } } }
-        });
-    }
-
-    function renderEnvPsuChart(data) {
-        const el = document.getElementById('reportEnvPsu');
-        if (!el) return;
-        let existing = Chart.getChart(el); if (existing) existing.destroy();
-
-        const envData = data.servers_by_env.filter(e => e.environment && e.environment.trim());
-        if (!envData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados de ambiente</p></div>'; return; }
-        const envColors = { 'Produção': '#ef4444', 'Homologação': '#eab308', 'Desenvolvimento': '#3b82f6', 'Transacional': '#ec4899' };
-        new Chart(el.getContext('2d'), {
-            type: 'polarArea',
-            data: { labels: envData.map(e => e.environment), datasets: [{ data: envData.map(e => e.cnt), backgroundColor: envData.map(e => (envColors[e.environment] || '#a3e635')), borderColor: '#000', borderWidth: 2 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { padding: 10, font: { family: 'Space Mono' } } } } }
-        });
-    }
-
-    function renderCmdbStatusChart(data) {
-        const el = document.getElementById('reportCmdbStatus');
-        if (!el) return;
-        let existing = Chart.getChart(el); if (existing) existing.destroy();
-
-        const sd = data.cmdb_by_status.filter(s => s.status && s.status.trim());
-        if (!sd.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados CMDB</p></div>'; return; }
-        const sc = { 'Ativo': '#a3e635', 'Sendo descontinuado': '#eab308', 'Em Construção': '#3b82f6', 'Em Elaboração': '#ec4899', 'Descontinuado': '#ef4444' };
-        new Chart(el.getContext('2d'), {
-            type: 'doughnut',
-            data: { labels: sd.map(s => s.status), datasets: [{ data: sd.map(s => s.cnt), backgroundColor: sd.map(s => sc[s.status] || '#0F172A'), borderColor: '#000', borderWidth: 2, hoverOffset: 8 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'right', labels: { padding: 10, font: { family: 'Space Mono', size: 10 } } } } }
-        });
-    }
-
-    function renderTeamChart(data) {
-        const el = document.getElementById('reportTeam');
-        if (!el) return;
-        let existing = Chart.getChart(el); if (existing) existing.destroy();
-
-        const team = data.gmuds_by_person.filter(t => t.assigned_to && t.assigned_to.trim()).slice(0, 8);
-        if (!team.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados de equipe</p></div>'; return; }
-        const colors = ['#0F172A', '#a3e635', '#f97316', '#ef4444', '#eab308', '#ec4899', '#3b82f6', '#14b8a6', '#8b5cf6'];
-        new Chart(el.getContext('2d'), {
-            type: 'bar',
-            data: { labels: team.map(t => t.assigned_to.length > 16 ? t.assigned_to.slice(0, 16) + '…' : t.assigned_to), datasets: [{ label: 'GMUDs', data: team.map(t => t.cnt), backgroundColor: colors.slice(0, team.length), borderRadius: 0, borderWidth: 2, borderColor: '#000', borderSkipped: false, barPercentage: 0.6 }] },
-            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { y: { ticks: { font: { family: 'Space Mono', size: 10 } } }, x: { beginAtZero: true, ticks: { precision: 0, font: { family: 'Space Mono' } } } } }
-        });
-    }
-
-    function renderCmdbEnvChart(data) {
-        const el = document.getElementById('reportCmdbEnv');
-        if (!el) return;
-        let existing = Chart.getChart(el); if (existing) existing.destroy();
-
-        const envData = data.cmdb_by_env.filter(e => e.environment && e.environment.trim());
-        if (!envData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados CMDB por ambiente</p></div>'; return; }
-        const envColors = { 'Produção': '#ef4444', 'Homologação': '#eab308', 'Desenvolvimento': '#3b82f6', 'Transacional': '#ec4899', 'White': '#e2e8f0' };
-        new Chart(el.getContext('2d'), {
-            type: 'bar',
-            data: { labels: envData.map(e => e.environment), datasets: [{ label: 'Bancos de Dados', data: envData.map(e => e.cnt), backgroundColor: envData.map(e => (envColors[e.environment] || '#a3e635')), borderColor: '#000', borderWidth: 2, borderRadius: 0, borderSkipped: false, barPercentage: 0.5 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0, font: { family: 'Space Mono' } } }, x: { ticks: { font: { family: 'Space Mono' } } } } }
-        });
-    }
+function renderCmdbEnvChart(data) {
+    const el = document.getElementById('reportCmdbEnv');
+    if (!el) return;
+    const envData = data.cmdb_by_env.filter(e=>e.environment&&e.environment.trim());
+    if (!envData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados CMDB por ambiente</p></div>'; return; }
+    const envColors = {'Produção':'#ef4444','Homologação':'#f59e0b','Desenvolvimento':'#3b82f6','Transacional':'#a855f7','White':'#6b7280'};
+    new Chart(el.getContext('2d'), {
+        type: 'bar',
+        data: { labels: envData.map(e=>e.environment), datasets: [{ label:'Bancos de Dados', data: envData.map(e=>e.cnt), backgroundColor: envData.map(e=>(envColors[e.environment]||'#6366f1')+'99'), borderColor: envData.map(e=>envColors[e.environment]||'#6366f1'), borderWidth:1, borderRadius:6, borderSkipped:false, barPercentage:0.5 }] },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{precision:0}}} }
+    });
+}
 </script>
 {% endblock %}

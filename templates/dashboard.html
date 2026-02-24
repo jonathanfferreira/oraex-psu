@@ -9,336 +9,75 @@
 
 {% block content %}
 
-<div class="header-actions"
-    style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
-    <h3 style="color: var(--text-secondary); margin: 0; font-size: 1.1rem;">Visão Geral do Ambiente</h3>
-
-    {% if not current_user.client_restriction or current_user.client_restriction == 'none' %}
-    <div style="display: flex; gap: 1rem; align-items: center;">
-        <label style="color: var(--text-muted); font-size: 0.9rem;">Visão Cliente:</label>
-        <select id="globalClientFilter" onchange="loadDashboard(this.value)"
-            style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--brand-cyan); border-radius: 4px; outline: none; cursor: pointer; min-width: 150px;">
-            <option value="Todos" style="background:#05050A">Global (Todos)</option>
-            <option value="GetNet" style="background:#05050A">GetNet</option>
-            <option value="PagoNxt" style="background:#05050A">PagoNxt</option>
-        </select>
-    </div>
-    {% else %}
-    <div style="display: flex; gap: 1rem; align-items: center;">
-        <span
-            style="color: var(--brand-cyan); padding: 0.5rem 1rem; background: rgba(0, 136, 238, 0.1); border: 1px solid rgba(0, 136, 238, 0.3); border-radius: 4px; font-weight: bold;">
-            Visão Restrita: {{ current_user.client_restriction }}
-        </span>
-    </div>
-    {% endif %}
-</div>
-
 <div class="kpi-grid" id="kpiGrid">
     <div class="kpi-card accent-1">
-        <div class="kpi-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="3" width="20" height="18" rx="2" />
-                <path d="M2 8h20" />
-            </svg></div>
+        <div class="kpi-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M2 8h20"/></svg></div>
         <div class="kpi-label">Servidores Oracle</div>
         <div class="kpi-value" id="kpiServers">—</div>
         <div class="kpi-detail" id="kpiServersDetail"></div>
     </div>
     <div class="kpi-card accent-2">
-        <div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-                <path d="M22 4L12 14.01l-3-3" />
-            </svg></div>
+        <div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
         <div class="kpi-label">PSU Atualizado (19.29+)</div>
         <div class="kpi-value" id="kpiUpdated" style="color: var(--success)">—</div>
         <div class="kpi-detail" id="kpiUpdatedDetail"></div>
     </div>
     <div class="kpi-card accent-3">
-        <div class="kpi-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
-                <rect x="9" y="3" width="6" height="4" rx="1" />
-            </svg></div>
+        <div class="kpi-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg></div>
         <div class="kpi-label">GMUDs Total</div>
         <div class="kpi-value" id="kpiGmuds">—</div>
         <div class="kpi-detail" id="kpiGmudsDetail"></div>
     </div>
     <div class="kpi-card accent-4">
-        <div class="kpi-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 8v8M8 12h8" />
-            </svg></div>
+        <div class="kpi-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></div>
         <div class="kpi-label">Total CMDB</div>
         <div class="kpi-value" id="kpiCmdb">—</div>
         <div class="kpi-detail" id="kpiCmdbDetail"></div>
     </div>
     <div class="kpi-card accent-4">
-        <div class="kpi-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                <line x1="8" y1="21" x2="16" y2="21" />
-                <line x1="12" y1="17" x2="12" y2="21" />
-            </svg></div>
+        <div class="kpi-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
         <div class="kpi-label">CMDB Full</div>
         <div class="kpi-value" id="kpiCmdbFull">—</div>
         <div class="kpi-detail" id="kpiCmdbFullDetail"></div>
     </div>
     <div class="kpi-card accent-5">
-        <div class="kpi-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg></div>
+        <div class="kpi-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
         <div class="kpi-label">PSU Desatualizado</div>
         <div class="kpi-value" id="kpiOutdated" style="color: var(--danger)">—</div>
         <div class="kpi-detail" id="kpiOutdatedDetail"></div>
     </div>
 </div>
 
-<!-- ── Painel de Upload ─────────────────────────────── -->
-<div class="chart-card full-width" style="margin-bottom: 16px; animation-delay: 0.25s" id="uploadPanel">
-    <div class="chart-header" style="cursor:pointer" onclick="toggleUploadPanel()">
-        <div>
-            <div class="chart-title">📤 Atualizar Dados</div>
-            <div class="chart-subtitle">Faça upload das planilhas para atualizar o sistema</div>
-        </div>
-        <svg id="uploadChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
-            height="20" style="transition: transform 0.3s ease">
-            <path d="M6 9l6 6 6-6" />
-        </svg>
-    </div>
-    <div id="uploadBody" style="display:none; padding: 16px 20px 20px;">
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-            <!-- Consolidação Upload -->
-            <div class="upload-zone" id="dropConsolidacao"
-                ondragover="event.preventDefault(); this.classList.add('drag-over')"
-                ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'consolidacao')">
-                <input type="file" id="fileConsolidacao" accept=".xlsm,.xlsx,.xls" style="display:none"
-                    onchange="handleFileSelect(this, 'consolidacao')">
-                <div class="upload-icon">📊</div>
-                <div class="upload-title">Consolidação GetTech</div>
-                <div class="upload-desc">Planilha principal com servidores, CMDB, GMUDs, PagoNxt e Planning</div>
-                <button class="btn-upload" onclick="document.getElementById('fileConsolidacao').click()">
-                    Selecionar Arquivo
-                </button>
-                <div class="upload-hint">.xlsm / .xlsx — arraste ou clique</div>
-                <div class="upload-progress" id="progressConsolidacao" style="display:none">
-                    <div class="progress-bar">
-                        <div class="progress-fill animate-progress" id="barConsolidacao"></div>
-                    </div>
-                    <div class="upload-status" id="statusConsolidacao">Importando...</div>
-                </div>
-            </div>
-            <!-- CMDB Full Upload -->
-            <div class="upload-zone" id="dropCmdbFull"
-                ondragover="event.preventDefault(); this.classList.add('drag-over')"
-                ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'cmdb')">
-                <input type="file" id="fileCmdbFull" accept=".xlsx,.xls" style="display:none"
-                    onchange="handleFileSelect(this, 'cmdb')">
-                <div class="upload-icon">🗄️</div>
-                <div class="upload-title">CMDB Full GetBR</div>
-                <div class="upload-desc">Inventário completo de servidores de banco (GetNet Brasil + LATAM)</div>
-                <button class="btn-upload" onclick="document.getElementById('fileCmdbFull').click()">
-                    Selecionar Arquivo
-                </button>
-                <div class="upload-hint">.xlsx — arraste ou clique</div>
-                <div class="upload-progress" id="progressCmdbFull" style="display:none">
-                    <div class="progress-bar">
-                        <div class="progress-fill animate-progress" id="barCmdbFull"></div>
-                    </div>
-                    <div class="upload-status" id="statusCmdbFull">Importando...</div>
-                </div>
-            </div>
-            <!-- Qualys Upload -->
-            <div class="upload-zone" id="dropQualys"
-                ondragover="event.preventDefault(); this.classList.add('drag-over')"
-                ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'qualys')">
-                <input type="file" id="fileQualys" accept=".xlsx,.xlsm,.xls" style="display:none"
-                    onchange="handleFileSelect(this, 'qualys')">
-                <div class="upload-icon">🛡️</div>
-                <div class="upload-title">Scan Qualys</div>
-                <div class="upload-desc">Relatórios de vulnerabilidades do PagoNxt ou GetNet</div>
-                <div class="flex items-center gap-2 mb-3 justify-center">
-                    <select id="qualysSourceType"
-                        class="text-xs bg-gray-50 border border-gray-200 text-gray-700 rounded-md py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="GetNet">Origem: GetNet</option>
-                        <option value="PagoNxt">Origem: PagoNxt</option>
-                    </select>
-                </div>
-                <button class="btn-upload" style="background:#f97316;"
-                    onclick="document.getElementById('fileQualys').click()">
-                    Selecionar Arquivo
-                </button>
-                <div class="upload-hint">.xlsm / .xlsx — arraste ou clique</div>
-                <div class="upload-progress" id="progressQualys" style="display:none">
-                    <div class="progress-bar">
-                        <div class="progress-fill animate-progress" id="barQualys" style="background:#f97316;"></div>
-                    </div>
-                    <div class="upload-status" id="statusQualys">Importando...</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-    .upload-zone {
-        border: 2px dashed rgba(255, 255, 255, 0.12);
-        border-radius: 12px;
-        padding: 28px 20px;
-        text-align: center;
-        transition: all 0.3s ease;
-        background: rgba(255, 255, 255, 0.02);
-    }
-
-    .upload-zone:hover,
-    .upload-zone.drag-over {
-        border-color: var(--accent-primary, #0088ee);
-        background: rgba(0, 136, 238, 0.06);
-    }
-
-    .upload-zone.drag-over {
-        transform: scale(1.02);
-    }
-
-    .upload-zone.success {
-        border-color: var(--success, #10b981);
-        background: rgba(16, 185, 129, 0.06);
-    }
-
-    .upload-zone.error {
-        border-color: var(--danger, #ef4444);
-        background: rgba(239, 68, 68, 0.06);
-    }
-
-    .upload-icon {
-        font-size: 2.2rem;
-        margin-bottom: 8px;
-    }
-
-    .upload-title {
-        font-weight: 600;
-        font-size: 0.95rem;
-        color: var(--text-primary);
-        margin-bottom: 4px;
-    }
-
-    .upload-desc {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin-bottom: 14px;
-        line-height: 1.4;
-    }
-
-    .btn-upload {
-        display: inline-block;
-        padding: 8px 20px;
-        border: none;
-        border-radius: 8px;
-        background: var(--accent-primary, #0088ee);
-        color: #fff;
-        font-size: 0.8rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .btn-upload:hover {
-        filter: brightness(1.15);
-        transform: translateY(-1px);
-    }
-
-    .btn-upload:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    .upload-hint {
-        font-size: 0.68rem;
-        color: var(--text-muted);
-        margin-top: 8px;
-        opacity: 0.7;
-    }
-
-    .upload-progress {
-        margin-top: 14px;
-    }
-
-    .upload-status {
-        font-size: 0.75rem;
-        margin-top: 6px;
-        color: var(--text-secondary);
-    }
-
-    .animate-progress {
-        transition: width 0.5s ease;
-    }
-
-    @media (max-width: 700px) {
-        #uploadBody>div {
-            grid-template-columns: 1fr !important;
-        }
-    }
-</style>
-
 <div class="chart-card full-width" style="margin-bottom: 16px; animation-delay: 0.3s">
-    <div class="chart-header">
-        <div>
-            <div class="chart-title">📍 Distribuição por Entorno</div>
-            <div class="chart-subtitle">Servidores Oracle por ambiente</div>
-        </div>
-    </div>
+    <div class="chart-header"><div><div class="chart-title">📍 Distribuição por Entorno</div><div class="chart-subtitle">Servidores Oracle por ambiente</div></div></div>
     <div class="env-grid" id="envGrid"></div>
 </div>
 
 <div class="charts-grid">
     <div class="chart-card" style="animation-delay: 0.35s">
-        <div class="chart-header">
-            <div>
-                <div class="chart-title">🔄 Versão PSU por Servidor</div>
-                <div class="chart-subtitle">Distribuição de versões Oracle</div>
-            </div>
-        </div>
+        <div class="chart-header"><div><div class="chart-title">🔄 Versão PSU por Servidor</div><div class="chart-subtitle">Distribuição de versões Oracle</div></div></div>
         <div class="chart-body"><canvas id="chartPsu"></canvas></div>
     </div>
     <div class="chart-card" style="animation-delay: 0.4s">
-        <div class="chart-header">
-            <div>
-                <div class="chart-title">📊 GMUDs por Status</div>
-                <div class="chart-subtitle">Situação das changes</div>
-            </div>
-        </div>
+        <div class="chart-header"><div><div class="chart-title">📊 GMUDs por Status</div><div class="chart-subtitle">Situação das changes</div></div></div>
         <div class="chart-body"><canvas id="chartGmudStatus"></canvas></div>
     </div>
 </div>
 
 <div class="charts-grid">
     <div class="chart-card full-width" style="animation-delay: 0.45s">
-        <div class="chart-header">
-            <div>
-                <div class="chart-title">📈 Evolução Mensal de GMUDs</div>
-                <div class="chart-subtitle">Quantidade de changes por mês</div>
-            </div>
-        </div>
+        <div class="chart-header"><div><div class="chart-title">📈 Evolução Mensal de GMUDs</div><div class="chart-subtitle">Quantidade de changes por mês</div></div></div>
         <div class="chart-body"><canvas id="chartMonthly"></canvas></div>
     </div>
 </div>
 
 <div class="charts-grid">
     <div class="chart-card" style="animation-delay: 0.5s">
-        <div class="chart-header">
-            <div>
-                <div class="chart-title">🗄️ Bancos por Tecnologia</div>
-                <div class="chart-subtitle">CMDB — tipo de banco de dados</div>
-            </div>
-        </div>
+        <div class="chart-header"><div><div class="chart-title">🗄️ Bancos por Tecnologia</div><div class="chart-subtitle">CMDB — tipo de banco de dados</div></div></div>
         <div class="chart-body"><canvas id="chartDbType"></canvas></div>
     </div>
     <div class="chart-card" style="animation-delay: 0.55s">
-        <div class="chart-header">
-            <div>
-                <div class="chart-title">👥 GMUDs por Recurso</div>
-                <div class="chart-subtitle">Top executores de changes</div>
-            </div>
-        </div>
+        <div class="chart-header"><div><div class="chart-title">👥 GMUDs por Recurso</div><div class="chart-subtitle">Top executores de changes</div></div></div>
         <div class="chart-body" id="teamStats"></div>
     </div>
 </div>
@@ -347,296 +86,132 @@
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-        applyChartDefaults();
-        await loadDashboard();
+document.addEventListener('DOMContentLoaded', async () => {
+    applyChartDefaults();
+    try {
+        const data = await API.dashboard();
+        renderKPIs(data);
+        renderEnvGrid(data);
+        renderPsuChart(data);
+        renderGmudStatusChart(data);
+        renderMonthlyChart(data);
+        renderDbTypeChart(data);
+        renderTeamStats(data);
+    } catch (e) {
+        console.error('Dashboard error:', e);
+        showToast('Erro ao carregar dashboard: ' + e.message, 'error');
+    }
+});
+
+function renderKPIs(data) {
+    animateValue(document.getElementById('kpiServers'), 0, data.total_servers);
+    const updated = data.servers_by_psu
+        .filter(s => s.psu_version && (s.psu_version.includes('19.30') || s.psu_version.includes('19.29') || s.psu_version.includes('19.28')))
+        .reduce((sum, s) => sum + s.cnt, 0);
+    const pct = data.total_servers > 0 ? Math.round(updated / data.total_servers * 100) : 0;
+    animateValue(document.getElementById('kpiUpdated'), 0, updated);
+    document.getElementById('kpiUpdatedDetail').innerHTML = `<span class="kpi-badge up">▲ ${pct}%</span> do total`;
+    animateValue(document.getElementById('kpiGmuds'), 0, data.total_gmuds);
+    const enc = data.gmuds_by_status.find(s => s.status && s.status.toUpperCase().includes('ENCERRADA'));
+    if (enc) document.getElementById('kpiGmudsDetail').innerHTML = `<span class="kpi-badge up">${enc.cnt}</span> encerradas`;
+    animateValue(document.getElementById('kpiCmdb'), 0, data.total_cmdb);
+    const orc = data.cmdb_by_type.find(t => t.db_type === 'Oracle');
+    if (orc) document.getElementById('kpiCmdbDetail').textContent = `${orc.cnt} Oracle`;
+    if (data.total_cmdb_full) {
+        animateValue(document.getElementById('kpiCmdbFull'), 0, data.total_cmdb_full);
+        document.getElementById('kpiCmdbFullDetail').textContent = 'GetNet + PagoNxt';
+    }
+    const outdated = data.servers_by_psu
+        .filter(s => s.psu_version && !s.psu_version.includes('19.30') && !s.psu_version.includes('19.29') && !s.psu_version.includes('19.28'))
+        .reduce((sum, s) => sum + s.cnt, 0);
+    animateValue(document.getElementById('kpiOutdated'), 0, outdated);
+    const oPct = data.total_servers > 0 ? Math.round(outdated / data.total_servers * 100) : 0;
+    document.getElementById('kpiOutdatedDetail').innerHTML = `<span class="kpi-badge down">▼ ${oPct}%</span> precisam atualização`;
+    document.getElementById('kpiServersDetail').innerHTML =
+        `${data.with_standby || 0} com standby, ${data.standalone || 0} standalone${data.total_ggs ? ' · ' + data.total_ggs + ' GGS' : ''}`;
+}
+
+function renderEnvGrid(data) {
+    const grid = document.getElementById('envGrid');
+    const total = data.total_servers || 1;
+    const colors = { 'Produção': {bar:'var(--danger)',text:'#f87171'}, 'Homologação': {bar:'var(--warning)',text:'#fbbf24'}, 'Desenvolvimento': {bar:'var(--info)',text:'#60a5fa'}, 'Transacional': {bar:'var(--accent-secondary)',text:'#00bbff'} };
+    grid.innerHTML = data.servers_by_env.filter(e => e.environment && e.environment.trim()).map(env => {
+        const pct = Math.round(env.cnt / total * 100);
+        const c = colors[env.environment] || {bar:'var(--accent-primary)',text:'var(--text-primary)'};
+        return `<div class="env-card"><div class="env-name">${env.environment}</div><div class="env-count" style="color:${c.text}">${env.cnt}</div><div style="font-size:0.68rem;color:var(--text-muted)">${pct}% do total</div><div class="env-bar"><div class="env-bar-fill" style="width:${pct}%;background:${c.bar}"></div></div></div>`;
+    }).join('');
+}
+
+function renderPsuChart(data) {
+    const el = document.getElementById('chartPsu');
+    if (!el) return;
+    const psuData = data.servers_by_psu.filter(s => s.psu_version && s.psu_version.trim());
+    if (!psuData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados de PSU</p></div>'; return; }
+    new Chart(el.getContext('2d'), {
+        type: 'doughnut',
+        data: { labels: psuData.map(s => 'PSU ' + s.psu_version), datasets: [{ data: psuData.map(s => s.cnt), backgroundColor: CHART_COLORS.palette.slice(0, psuData.length), hoverOffset: 6 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { padding: 10, font: { size: 10 } } } } }
     });
+}
 
-    async function loadDashboard(clientFilter = null) {
-        try {
-            if (!clientFilter) {
-                const select = document.getElementById('globalClientFilter');
-                clientFilter = select ? select.value : 'Todos';
-            }
-            const data = await API.dashboard(clientFilter);
-            renderKPIs(data);
-            renderEnvGrid(data);
-            renderPsuChart(data);
-            renderGmudStatusChart(data);
-            renderMonthlyChart(data);
-            renderDbTypeChart(data);
-            renderTeamStats(data);
-        } catch (e) {
-            console.error('Dashboard error:', e);
-            showToast('Erro ao carregar dashboard: ' + e.message, 'error');
-        }
-    }
+function renderGmudStatusChart(data) {
+    const el = document.getElementById('chartGmudStatus');
+    if (!el) return;
+    const statusData = data.gmuds_by_status.filter(s => s.status && s.status.trim());
+    if (!statusData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados de GMUDs</p></div>'; return; }
+    const statusColors = { 'ENCERRADA':'#10b981','Encerrada':'#10b981','IMPLEMENTAR':'#3b82f6','REPLANEJAR':'#f59e0b','REPLANEJADA':'#f59e0b','CANCELADA':'#ef4444','PROGRAMADA':'#06b6d4','NOVO':'#8b5cf6','FREEZING':'#6366f1','AUTORIZAR':'#f97316','AVALIAR':'#ec4899' };
+    new Chart(el.getContext('2d'), {
+        type: 'doughnut',
+        data: { labels: statusData.map(s => s.status), datasets: [{ data: statusData.map(s => s.cnt), backgroundColor: statusData.map(s => statusColors[s.status] || '#0088ee'), hoverOffset: 6 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { padding: 10, font: { size: 10 } } } } }
+    });
+}
 
-    function renderKPIs(data) {
-        animateValue(document.getElementById('kpiServers'), 0, data.total_servers);
-        const updated = data.servers_by_psu
-            .filter(s => s.psu_version && (s.psu_version.includes('19.30') || s.psu_version.includes('19.29') || s.psu_version.includes('19.28')))
-            .reduce((sum, s) => sum + s.cnt, 0);
-        const pct = data.total_servers > 0 ? Math.round(updated / data.total_servers * 100) : 0;
-        animateValue(document.getElementById('kpiUpdated'), 0, updated);
-        document.getElementById('kpiUpdatedDetail').innerHTML = `<span class="kpi-badge up">▲ ${pct}%</span> do total`;
-        animateValue(document.getElementById('kpiGmuds'), 0, data.total_gmuds);
-        const enc = data.gmuds_by_status.find(s => s.status && s.status.toUpperCase().includes('ENCERRADA'));
-        if (enc) document.getElementById('kpiGmudsDetail').innerHTML = `<span class="kpi-badge up">${enc.cnt}</span> encerradas`;
-        animateValue(document.getElementById('kpiCmdb'), 0, data.total_cmdb);
-        const orc = data.cmdb_by_type.find(t => t.db_type === 'Oracle');
-        if (orc) document.getElementById('kpiCmdbDetail').textContent = `${orc.cnt} Oracle`;
-        if (data.total_cmdb_full) {
-            animateValue(document.getElementById('kpiCmdbFull'), 0, data.total_cmdb_full);
-            document.getElementById('kpiCmdbFullDetail').textContent = 'GetNet + PagoNxt';
-        }
-        const outdated = data.servers_by_psu
-            .filter(s => s.psu_version && !s.psu_version.includes('19.30') && !s.psu_version.includes('19.29') && !s.psu_version.includes('19.28'))
-            .reduce((sum, s) => sum + s.cnt, 0);
-        animateValue(document.getElementById('kpiOutdated'), 0, outdated);
-        const oPct = data.total_servers > 0 ? Math.round(outdated / data.total_servers * 100) : 0;
-        document.getElementById('kpiOutdatedDetail').innerHTML = `<span class="kpi-badge down">▼ ${oPct}%</span> precisam atualização`;
-        document.getElementById('kpiServersDetail').innerHTML =
-            `${data.with_standby || 0} com standby, ${data.standalone || 0} standalone${data.total_ggs ? ' · ' + data.total_ggs + ' GGS' : ''}`;
-    }
+function renderMonthlyChart(data) {
+    const el = document.getElementById('chartMonthly');
+    if (!el) return;
+    const months = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const sorted = data.gmuds_by_month.sort((a,b) => a.year*100+a.month - (b.year*100+b.month));
+    if (!sorted.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados mensais</p></div>'; return; }
+    const labels = sorted.map(m => `${months[m.month]}/${String(m.year).slice(-2)}`);
+    const values = sorted.map(m => m.cnt);
+    const ctx = el.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(0,136,238,0.8)');
+    gradient.addColorStop(1, 'rgba(0,136,238,0.15)');
+    new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'GMUDs', data: values, backgroundColor: gradient, borderRadius: 6, borderSkipped: false, barPercentage: 0.7 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+}
 
-    function renderEnvGrid(data) {
-        const grid = document.getElementById('envGrid');
-        const total = data.total_servers || 1;
-        const colors = { 'Produção': { bar: 'var(--danger)', text: '#f87171' }, 'Homologação': { bar: 'var(--warning)', text: '#fbbf24' }, 'Desenvolvimento': { bar: 'var(--info)', text: '#60a5fa' }, 'Transacional': { bar: 'var(--accent-secondary)', text: '#00bbff' } };
-        grid.innerHTML = data.servers_by_env.filter(e => e.environment && e.environment.trim()).map(env => {
-            const pct = Math.round(env.cnt / total * 100);
-            const c = colors[env.environment] || { bar: 'var(--accent-primary)', text: 'var(--text-primary)' };
-            return `<div class="env-card"><div class="env-name">${env.environment}</div><div class="env-count" style="color:${c.text}">${env.cnt}</div><div style="font-size:0.68rem;color:var(--text-muted)">${pct}% do total</div><div class="env-bar"><div class="env-bar-fill" style="width:${pct}%;background:${c.bar}"></div></div></div>`;
-        }).join('');
-    }
+function renderDbTypeChart(data) {
+    const el = document.getElementById('chartDbType');
+    if (!el) return;
+    const dbData = data.cmdb_by_type.filter(t => t.db_type && t.db_type.trim());
+    if (!dbData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados CMDB</p></div>'; return; }
+    new Chart(el.getContext('2d'), {
+        type: 'bar',
+        data: { labels: dbData.map(d => d.db_type), datasets: [{ label: 'Quantidade', data: dbData.map(d => d.cnt), backgroundColor: CHART_COLORS.palette.slice(0, dbData.length), borderRadius: 6, borderSkipped: false, barPercentage: 0.6 }] },
+        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+}
 
-    function renderPsuChart(data) {
-        const el = document.getElementById('chartPsu');
-        if (!el) return;
-        let existing = Chart.getChart(el);
-        if (existing) existing.destroy();
-
-        const psuData = data.servers_by_psu.filter(s => s.psu_version && s.psu_version.trim());
-        if (!psuData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados de PSU</p></div>'; return; }
-        new Chart(el.getContext('2d'), {
-            type: 'doughnut',
-            data: { labels: psuData.map(s => 'PSU ' + s.psu_version), datasets: [{ data: psuData.map(s => s.cnt), backgroundColor: CHART_COLORS.palette.slice(0, psuData.length), hoverOffset: 6, borderColor: 'rgba(255,255,255,0.05)', borderWidth: 2 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { padding: 10, color: '#a0a0cc', font: { size: 10 } } } } }
-        });
-    }
-
-    function renderGmudStatusChart(data) {
-        const el = document.getElementById('chartGmudStatus');
-        if (!el) return;
-        let existing = Chart.getChart(el);
-        if (existing) existing.destroy();
-
-        const statusData = data.gmuds_by_status.filter(s => s.status && s.status.trim());
-        if (!statusData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados de GMUDs</p></div>'; return; }
-        const statusColors = {
-            'ENCERRADA': '#10b981', 'Encerrada': '#10b981',
-            'IMPLEMENTAR': '#3b82f6', 'REPLANEJAR': '#f59e0b', 'REPLANEJADA': '#f59e0b',
-            'CANCELADA': '#ef4444', 'PROGRAMADA': '#06b6d4',
-            'NOVO': '#94a3b8', 'FREEZING': '#8b5cf6',
-            'AUTORIZAR': '#f97316', 'AVALIAR': '#ec4899',
-            'REAGENDADA': '#0088ee', 'INSUCESSO': '#dc2626', 'CAR': '#14b8a6', 'REVISÃO': '#84cc16'
-        };
-        new Chart(el.getContext('2d'), {
-            type: 'doughnut',
-            data: { labels: statusData.map(s => s.status), datasets: [{ data: statusData.map(s => s.cnt), backgroundColor: statusData.map(s => statusColors[s.status] || '#64748b'), hoverOffset: 6, borderColor: 'rgba(255,255,255,0.05)', borderWidth: 1 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { padding: 10, color: '#a0a0cc', font: { size: 10 } } } } }
-        });
-    }
-
-    function renderMonthlyChart(data) {
-        const el = document.getElementById('chartMonthly');
-        if (!el) return;
-        let existing = Chart.getChart(el);
-        if (existing) existing.destroy();
-
-        const months = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        const sorted = data.gmuds_by_month.sort((a, b) => a.year * 100 + a.month - (b.year * 100 + b.month));
-        if (!sorted.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados mensais</p></div>'; return; }
-        const labels = sorted.map(m => `${months[m.month]}/${String(m.year).slice(-2)}`);
-        const values = sorted.map(m => m.cnt);
-        const ctx = el.getContext('2d');
-        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(0, 136, 238, 0.9)');
-        gradient.addColorStop(1, 'rgba(0, 187, 255, 0.3)');
-        new Chart(ctx, {
-            type: 'bar',
-            data: { labels, datasets: [{ label: 'GMUDs', data: values, backgroundColor: gradient, borderColor: 'rgba(0, 187, 255, 0.5)', borderWidth: 1, borderRadius: 4, borderSkipped: false, barPercentage: 0.7 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#a0a0cc', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { beginAtZero: true, ticks: { precision: 0, color: '#a0a0cc', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } } } }
-        });
-    }
-
-    function renderDbTypeChart(data) {
-        const el = document.getElementById('chartDbType');
-        if (!el) return;
-        let existing = Chart.getChart(el);
-        if (existing) existing.destroy();
-
-        const dbData = data.cmdb_by_type.filter(t => t.db_type && t.db_type.trim());
-        if (!dbData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados CMDB</p></div>'; return; }
-        new Chart(el.getContext('2d'), {
-            type: 'bar',
-            data: { labels: dbData.map(d => d.db_type), datasets: [{ label: 'Quantidade', data: dbData.map(d => d.cnt), backgroundColor: CHART_COLORS.palette.slice(0, dbData.length), borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderRadius: 4, borderSkipped: false, barPercentage: 0.6 }] },
-            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a0a0cc', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } }, x: { beginAtZero: true, ticks: { precision: 0, color: '#a0a0cc', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } } } }
-        });
-    }
-
-    function renderTeamStats(data) {
-        const container = document.getElementById('teamStats');
-        if (!container) return;
-        const team = data.gmuds_by_person.filter(t => t.assigned_to && t.assigned_to.trim()).slice(0, 10);
-        if (!team.length) { container.innerHTML = '<div class="empty-state"><p>Sem dados de equipe</p></div>'; return; }
-        const max = team[0].cnt;
-        container.innerHTML = team.map(t => `
+function renderTeamStats(data) {
+    const container = document.getElementById('teamStats');
+    if (!container) return;
+    const team = data.gmuds_by_person.filter(t => t.assigned_to && t.assigned_to.trim()).slice(0, 10);
+    if (!team.length) { container.innerHTML = '<div class="empty-state"><p>Sem dados de equipe</p></div>'; return; }
+    const max = team[0].cnt;
+    container.innerHTML = team.map(t => `
         <div class="team-row">
             <span class="team-name">${t.assigned_to}</span>
             <div class="progress-bar-container" style="flex:1;margin:0 12px">
-                <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(t.cnt / max * 100)}%"></div></div>
+                <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(t.cnt/max*100)}%"></div></div>
             </div>
             <span class="team-count">${t.cnt}</span>
         </div>`).join('');
-    }
-
-    // ── Upload de Planilhas ──────────────────────────────
-
-    function toggleUploadPanel() {
-        const body = document.getElementById('uploadBody');
-        const chevron = document.getElementById('uploadChevron');
-        const isOpen = body.style.display !== 'none';
-        body.style.display = isOpen ? 'none' : 'block';
-        chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
-    }
-
-    function handleDrop(event, type) {
-        event.preventDefault();
-        let zone;
-        if (type === 'consolidacao') zone = document.getElementById('dropConsolidacao');
-        else if (type === 'cmdb') zone = document.getElementById('dropCmdbFull');
-        else if (type === 'qualys') zone = document.getElementById('dropQualys');
-
-        zone.classList.remove('drag-over');
-        const file = event.dataTransfer.files[0];
-        if (file) uploadFile(file, type);
-    }
-
-    function handleFileSelect(input, type) {
-        const file = input.files[0];
-        if (file) uploadFile(file, type);
-        input.value = '';  // Reset para permitir re-upload do mesmo arquivo
-    }
-
-    async function uploadFile(file, type) {
-        let zone, progress, bar, status, endpoint, allowed;
-        const formData = new FormData();
-        formData.append('file', file);
-
-        if (type === 'consolidacao') {
-            zone = document.getElementById('dropConsolidacao');
-            progress = document.getElementById('progressConsolidacao');
-            bar = document.getElementById('barConsolidacao');
-            status = document.getElementById('statusConsolidacao');
-            endpoint = '/api/import';
-            allowed = ['xlsm', 'xlsx', 'xls'];
-        } else if (type === 'cmdb') {
-            zone = document.getElementById('dropCmdbFull');
-            progress = document.getElementById('progressCmdbFull');
-            bar = document.getElementById('barCmdbFull');
-            status = document.getElementById('statusCmdbFull');
-            endpoint = '/api/import-cmdb-full';
-            allowed = ['xlsx', 'xls'];
-        } else if (type === 'qualys') {
-            zone = document.getElementById('dropQualys');
-            progress = document.getElementById('progressQualys');
-            bar = document.getElementById('barQualys');
-            status = document.getElementById('statusQualys');
-            endpoint = '/api/import-qualys';
-            allowed = ['xlsm', 'xlsx'];
-            formData.append('source_type', document.getElementById('qualysSourceType').value);
-        }
-
-        const btn = zone.querySelector('.btn-upload');
-
-        // Validar tipo de arquivo
-        const ext = file.name.split('.').pop().toLowerCase();
-        if (!allowed.includes(ext)) {
-            showToast(`Tipo de arquivo inválido. Use: ${allowed.join(', ')}`, 'error');
-            return;
-        }
-
-        // UI: mostrar progresso e bloquear botões
-        zone.classList.remove('success', 'error');
-        progress.style.display = 'block';
-        bar.style.width = '10%';
-        status.textContent = `Iniciando envio de ${file.name}...`;
-        btn.disabled = true;
-
-        try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                body: formData
-            });
-
-            const result = await response.json();
-
-            if (response.ok && result.task_id) {
-                const taskId = result.task_id;
-                bar.style.width = '40%';
-                status.textContent = 'Processando em 2º plano (Polling)...';
-
-                // Iniciar rotina de Polling do backend
-                const pollInterval = setInterval(async () => {
-                    try {
-                        const statusResp = await fetch(`/api/task-status/${taskId}`);
-                        const taskData = await statusResp.json();
-
-                        if (taskData.status === 'success') {
-                            clearInterval(pollInterval);
-                            bar.style.width = '100%';
-                            status.textContent = '✅ ' + taskData.message;
-                            zone.classList.add('success');
-                            showToast(taskData.message, 'success');
-                            setTimeout(() => location.reload(), 1500);
-                        } else if (taskData.status === 'error') {
-                            clearInterval(pollInterval);
-                            bar.style.width = '100%';
-                            bar.style.background = 'var(--danger, #ef4444)';
-                            status.textContent = '❌ ' + taskData.message;
-                            zone.classList.add('error');
-                            btn.disabled = false;
-                            showToast(taskData.message, 'error');
-                        } else {
-                            // Status 'processing'
-                            // Faz a barra pular um pouquinho pra mostrar atividade
-                            let currentWidth = parseInt(bar.style.width);
-                            if (currentWidth < 90) bar.style.width = String(currentWidth + 2) + '%';
-                        }
-                    } catch (pollErr) {
-                        console.error('Falha de polling:', pollErr);
-                    }
-                }, 1500);
-
-            } else {
-                bar.style.width = '100%';
-                bar.style.background = 'var(--danger, #ef4444)';
-                status.textContent = '❌ ' + (result.message || 'Erro na importação');
-                zone.classList.add('error');
-                btn.disabled = false;
-                showToast(result.message || 'Erro na importação', 'error');
-            }
-        } catch (err) {
-            bar.style.width = '100%';
-            bar.style.background = 'var(--danger, #ef4444)';
-            status.textContent = '❌ Erro de conexão: ' + err.message;
-            zone.classList.add('error');
-            showToast('Erro ao enviar arquivo: ' + err.message, 'error');
-        } finally {
-            btn.disabled = false;
-        }
-    }
+}
 </script>
 {% endblock %}
