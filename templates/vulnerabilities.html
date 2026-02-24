@@ -2,157 +2,183 @@
 
 
 
-<div id="cyber-security-dashboard" class="max-w-7xl mx-auto pb-12">
+<div id="cyber-security-dashboard" class="max-w-7xl mx-auto pb-12" style="padding:0 24px;">
 
-    <!-- Brutalist Header -->
-    <div
-        class="mb-10 brutal-box bg-neo-black text-white p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
-        <div class="z-10 relative">
-            <h1 class="text-4xl md:text-5xl font-black tracking-tighter text-white uppercase flex items-center gap-3">
-                <span class="text-neo-acid">>_</span> Security.HUD
+    <!-- Dark Glass Header -->
+    <div class="header-actions"
+        style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end;">
+        <div>
+            <h1
+                style="font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin: 0; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                Security.HUD
             </h1>
-            <p class="text-gray-400 mt-2 tech-font text-sm uppercase">Qualys Integrated • Live Threat Assessment</p>
+            <p style="color: var(--text-muted); margin-top: 4px; font-size: 0.95rem;">Qualys Integrated • Live Threat
+                Assessment</p>
         </div>
-        <div class="z-10">
+        <div>
             <span
-                class="inline-block bg-neo-danger text-white tech-font text-xs font-bold px-3 py-2 border-2 border-white neo-shadow-sm uppercase tracking-widest">
+                style="display: inline-block; background: rgba(0, 136, 238, 0.1); color: var(--brand-cyan); border: 1px solid var(--accent-glow); padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; box-shadow: var(--shadow-glow);">
+                <span
+                    style="display:inline-block; width:8px; height:8px; background:var(--brand-cyan); border-radius:50%; margin-right:6px; animation: pulse 2s infinite;"></span>
                 System: Active
             </span>
         </div>
-        <!-- Abstract BG Element -->
-        <div class="absolute -right-20 -bottom-20 opacity-10 pointer-events-none">
-            <svg width="300" height="300" viewBox="0 0 100 100" class="text-white fill-current animate-pulse"
-                style="animation-duration: 4s;">
-                <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="2" />
-                <line x1="50" y1="10" x2="50" y2="90" stroke="currentColor" stroke-width="2" />
-                <line x1="10" y1="50" x2="90" y2="50" stroke="currentColor" stroke-width="2" />
-            </svg>
-        </div>
     </div>
 
-    <!-- Asymmetric Top Metrics (90/10 Focus) -->
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
+    <!-- Asymmetric Top Metrics -->
+    <div class="kpi-grid" style="margin-bottom: 24px;">
 
         <!-- MASSIVE FOCUS METRIC -->
-        <div class="lg:col-span-2 brutal-box p-8 bg-neo-danger text-white flex flex-col justify-between">
-            <div>
-                <h3
-                    class="tech-font text-xs md:text-sm font-bold uppercase opacity-90 tracking-widest mb-1 border-b-2 border-white/30 pb-2 inline-block">
-                    /// Critical / High Exposures</h3>
-                <p class="text-6xl md:text-8xl font-black mt-4 tracking-tighter" id="stat-critical">----</p>
+        <div class="kpi-card accent-5" style="grid-column: span 2;">
+            <div class="kpi-icon red">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
             </div>
-            <div
-                class="mt-6 tech-font text-xs uppercase bg-black text-white px-3 py-2 self-start border border-white/20">
-                Action Required Immediately <span class="animate-pulse text-neo-danger ml-2">●</span>
+            <div class="kpi-label" style="text-transform: uppercase; letter-spacing: 1px;">Critical / High Exposures
             </div>
+            <div class="kpi-value" id="stat-critical" style="color: var(--danger); font-size: 3rem;">—</div>
+            <div class="kpi-detail" style="color: var(--danger);">Action Required Immediately</div>
         </div>
 
         <!-- Secondary Metrics -->
-        <div class="brutal-box p-6 flex flex-col justify-center bg-white">
-            <h3 class="tech-font text-xs font-bold text-gray-500 uppercase tracking-widest">Vulnerable DB Hosts</h3>
-            <p class="text-4xl md:text-5xl font-black text-neo-black mt-2" id="stat-hosts">--</p>
-            <div class="w-full h-2 bg-gray-100 mt-4 border border-neo-black">
-                <div class="h-full bg-neo-black w-[100%]"></div>
+        <div class="kpi-card accent-1">
+            <div class="kpi-icon purple">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="18" rx="2" />
+                    <path d="M2 8h20" />
+                </svg>
             </div>
+            <div class="kpi-label" style="text-transform: uppercase;">Vulnerable DB Hosts</div>
+            <div class="kpi-value" id="stat-hosts" style="font-size: 2.5rem;">—</div>
+            <div class="kpi-detail">Hosts with detected risks</div>
         </div>
 
-        <div class="brutal-box p-6 flex flex-col justify-center bg-neo-acid text-neo-black">
-            <h3 class="tech-font text-xs font-bold uppercase tracking-widest border-b-2 border-neo-black pb-1"
-                style="border-bottom-color: rgba(15, 23, 42, 0.2) !important;">Top Risk Environment</h3>
-            <p class="text-3xl lg:text-4xl font-black mt-3 uppercase break-all" id="stat-env">----</p>
-            <svg class="w-8 h-8 mt-4 opacity-50 text-neo-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z">
-                </path>
-            </svg>
+        <div class="kpi-card accent-3">
+            <div class="kpi-icon orange">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                    <polyline points="2 17 12 22 22 17" />
+                    <polyline points="2 12 12 17 22 12" />
+                </svg>
+            </div>
+            <div class="kpi-label" style="text-transform: uppercase;">Top Risk Env</div>
+            <div class="kpi-value" id="stat-env" style="font-size: 2rem; font-weight: 700;">—</div>
+            <div class="kpi-detail">Most affected environment</div>
         </div>
 
     </div>
 
-    <!-- Experimental Staggered Section -->
-    <div class="flex flex-col lg:flex-row gap-8 mb-12 items-stretch">
+    <!-- Charts and Logs Section -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px;">
 
-        <!-- Bar Chart Area: Brutalist Styling -->
-        <div class="flex-grow brutal-box p-8 bg-white flex flex-col relative w-full lg:w-2/3">
-            <div
-                class="absolute top-0 right-0 w-12 h-12 border-b-2 border-l-2 border-neo-black bg-gray-100 flex items-center justify-center tech-font text-xs font-bold text-neo-black">
-                .CHT</div>
-            <h3 class="brutal-title text-xl font-bold text-neo-black mb-8 uppercase flex items-center gap-3">
-                <span class="w-4 h-4 bg-neo-warning inline-block"></span> Severity Breakdown
-            </h3>
+        <!-- Bar Chart Area -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <div class="chart-title">Severity Breakdown</div>
+                    <div class="chart-subtitle">Distribution of vulnerabilities by severity level</div>
+                </div>
+            </div>
 
-            <div class="relative h-64 w-full flex-grow flex items-end justify-between gap-1 md:gap-4 pt-12 border-b-4 border-neo-black"
+            <div class="chart-body"
+                style="height: 280px; position: relative; display: flex; align-items: flex-end; justify-content: space-around; padding-top: 40px;"
                 id="severity-chart">
-                <div class="text-center tech-font text-sm text-gray-500 w-full animate-pulse">Initializing Data...</div>
+                <div class="empty-state" style="width: 100%;">
+                    <p>Initializing Data...</p>
+                </div>
             </div>
         </div>
 
         <!-- Warning Log / Top 10 -->
-        <div class="w-full lg:w-1/3 brutal-box bg-neo-black text-white p-6 relative">
-            <h3
-                class="tech-font text-sm font-bold text-neo-acid mb-6 uppercase tracking-widest flex items-center gap-2">
-                [!] Priority Targets
-            </h3>
-            <div class="overflow-y-auto h-80 custom-scrollbar pr-2">
-                <ul id="top-hosts-list" class="space-y-4">
-                    <li class="text-center tech-font text-sm text-gray-500 py-10 animate-pulse">Fetching DB targets...
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <div class="chart-title" style="color: var(--danger);">[!] Priority Targets</div>
+                    <div class="chart-subtitle">Direct endpoints requiring action</div>
+                </div>
+            </div>
+            <div class="chart-body" style="height: 280px; overflow-y: auto; padding-right: 8px;">
+                <ul id="top-hosts-list" style="list-style: none; margin: 0; padding: 0;">
+                    <li class="empty-state">
+                        <p>Fetching DB targets...</p>
                     </li>
                 </ul>
             </div>
         </div>
     </div>
 
-    <!-- Data Table (Dense, Sharp, Monospaced) -->
-    <div class="brutal-box p-0 bg-white overflow-hidden relative border-t-8 border-t-neo-black">
+    <!-- Data Table -->
+    <div class="chart-card">
 
-        <div
-            class="px-6 py-6 border-b-4 border-neo-black bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <h2 class="brutal-title text-2xl font-bold text-neo-black flex items-center gap-3">
-                <div class="w-6 h-6 border-2 border-neo-black bg-white flex items-center justify-center">
-                    <div class="w-2 h-2 bg-neo-black"></div>
-                </div>
-                Detection Matrix
-            </h2>
+        <div class="chart-header" style="flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h2 class="chart-title">Detection Matrix</h2>
+                <div class="chart-subtitle">Detailed Host and Vulnerability breakdown</div>
+            </div>
 
-            <div class="w-full md:w-auto flex">
-                <input type="text" id="searchInput" placeholder=">> SEARCH HOST / QID "
-                    class="w-full md:w-80 px-4 py-3 border-2 border-neo-black bg-white text-neo-black tech-font text-sm font-bold placeholder-gray-400 focus:outline-none focus:bg-neo-acid rounded-none transition-colors"
-                    style="--tw-bg-opacity: 0.1;">
-                <div class="w-12 border-y-2 border-r-2 border-neo-black bg-neo-black flex items-center justify-center">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="3"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                {% if not current_user.client_restriction or current_user.client_restriction == 'none' %}
+                <select id="vulnClientFilter"
+                    style="padding: 8px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px; outline: none;"
+                    onchange="applyVulnFilters()">
+                    <option value="Todos" style="background:#05050A">Global (All)</option>
+                    <option value="GetNet" style="background:#05050A">GetNet</option>
+                    <option value="PagoNxt" style="background:#05050A">PagoNxt</option>
+                </select>
+                {% endif %}
+                <select id="vulnSquadFilter"
+                    style="padding: 8px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px; outline: none;"
+                    onchange="applyVulnFilters()">
+                    <option value="Todas" style="background:#05050A">All Squads</option>
+                    <option value="DBA" style="background:#05050A">DBA</option>
+                    <option value="Middleware" style="background:#05050A">Middleware</option>
+                    <option value="Patch Manager" style="background:#05050A">Patch Manager</option>
+                    <option value="Segurança / Crypto" style="background:#05050A">Segurança / Crypto</option>
+                    <option value="Desenvolvimento" style="background:#05050A">Desenvolvimento</option>
+                    <option value="SO / Infra" style="background:#05050A">SO / Infra</option>
+                </select>
+                <div style="position: relative; display: flex;">
+                    <input type="text" id="searchInput" placeholder=">> SEARCH HOST / QID "
+                        style="padding: 8px 16px; padding-right: 40px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px; outline: none; min-width: 250px;">
+                    <div
+                        style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted);">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y-2 divide-neo-black" id="vulnTable">
-                <thead class="bg-gray-200">
+        <div class="table-container" style="overflow-x: auto; padding: 0 20px;">
+            <table class="data-table" id="vulnTable" style="width: 100%; text-align: left; border-collapse: collapse;">
+                <thead>
                     <tr>
-                        <th scope="col"
-                            class="px-6 py-4 text-left tech-font text-xs font-black text-neo-black uppercase border-r-2 border-neo-black">
+                        <th
+                            style="padding: 12px 16px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
                             QID</th>
-                        <th scope="col"
-                            class="px-6 py-4 text-left tech-font text-xs font-black text-neo-black uppercase border-r-2 border-neo-black">
+                        <th
+                            style="padding: 12px 16px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
                             Level</th>
-                        <th scope="col"
-                            class="px-6 py-4 text-left tech-font text-xs font-black text-neo-black uppercase border-r-2 border-neo-black">
+                        <th
+                            style="padding: 12px 16px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
                             Host Target</th>
-                        <th scope="col"
-                            class="px-6 py-4 text-left tech-font text-xs font-black text-neo-black uppercase border-r-2 border-neo-black">
-                            Vulnerability Title</th>
-                        <th scope="col"
-                            class="px-6 py-4 text-left tech-font text-xs font-black text-neo-black uppercase border-r-2 border-neo-black hidden lg:table-cell">
-                            Env</th>
-                        <th scope="col"
-                            class="px-6 py-4 text-left tech-font text-xs font-black text-neo-black uppercase hidden xl:table-cell">
-                            CMDB Status</th>
+                        <th
+                            style="padding: 12px 16px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
+                            Vulnerability Title & Squad</th>
+                        <th style="padding: 12px 16px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;"
+                            class="hidden lg:table-cell">Env</th>
+                        <th style="padding: 12px 16px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;"
+                            class="hidden xl:table-cell">CMDB Status</th>
                     </tr>
                 </thead>
-                <tbody id="vulnTableBody" class="bg-white divide-y-2 divide-gray-200 tech-font text-sm">
+                <tbody id="vulnTableBody">
                     <tr>
-                        <td colspan="6" class="px-6 py-16 text-center text-neo-black font-bold">
+                        <td colspan="6" style="padding: 40px; text-align: center; color: var(--text-muted);">
                             <span class="animate-pulse">Loading Matrix Data...</span>
                         </td>
                     </tr>
@@ -161,17 +187,18 @@
         </div>
 
         <div
-            class="px-6 py-4 border-t-4 border-neo-black bg-gray-50 flex flex-col md:flex-row items-center justify-between tech-font text-xs font-bold uppercase text-neo-black">
-            <span id="showingText" class="bg-neo-black text-neo-acid px-3 py-1">Rows: 0</span>
-            <span class="mt-2 md:mt-0 text-gray-500">LIMIT 500 ROWS MAX</span>
+            style="padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.85rem;">
+            <span id="showingText"
+                style="background: rgba(0, 136, 238, 0.1); color: var(--brand-cyan); padding: 4px 12px; border-radius: 12px; border: 1px solid rgba(0, 136, 238, 0.2);">Rows:
+                0</span>
+            <span>LIMIT 500 ROWS MAX</span>
         </div>
     </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        loadVulnStats();
-        loadVulnList();
+        applyVulnFilters();
 
         document.getElementById('searchInput').addEventListener('input', function (e) {
             const term = e.target.value.toLowerCase();
@@ -192,9 +219,17 @@
         });
     });
 
-    async function loadVulnStats() {
+    function applyVulnFilters() {
+        const client = document.getElementById('vulnClientFilter') ? document.getElementById('vulnClientFilter').value : 'Todos';
+        const squad = document.getElementById('vulnSquadFilter').value;
+        const params = new URLSearchParams({ client, squad });
+        loadVulnStats(params);
+        loadVulnList(params);
+    }
+
+    async function loadVulnStats(params) {
         try {
-            const res = await fetch('/api/vulnerabilities/stats');
+            const res = await fetch('/api/vulnerabilities/stats?' + params);
             const data = await res.json();
 
             if (data.error) throw new Error(data.error);
@@ -230,8 +265,7 @@
                             <p class="tech-font text-xs text-gray-400 mt-1">${h.db_type || 'UNK'} // ${h.environment}</p>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <span class="inline-block px-2 py-1 text-xs font-bold bg-neo-danger text-white tech-font border border-white">
+                        <span class="inline-block px-2 py-1 text-xs font-bold bg-[rgba(239,68,68,0.1)] text-[var(--danger)] border border-[var(--danger)] rounded" style="font-family: 'Space Mono', monospace;">
                             ${h.count}
                         </span>
                     </div>
@@ -270,14 +304,14 @@
 
                     chartContainer.innerHTML += `
                 <div class="flex flex-col items-center group w-1/5 relative">
-                    <div class="absolute -top-10 left-1/2 -translate-x-1/2 text-sm font-black text-neo-black opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-white border-2 border-neo-black px-2 py-1 z-20 brutal-box">
+                    <div class="absolute -top-10 left-1/2 -translate-x-1/2 text-sm font-black text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-[var(--bg-card)] border border-[var(--border-subtle)] px-2 py-1 z-20 rounded shadow-[var(--shadow-md)]">
                         ${s.count}
                     </div>
-                    <div class="relative w-full h-[200px] flex items-end justify-center group-hover-bg-neo-acid">
-                        <div class="w-[80%] max-w-[60px] ${bgColor} border-2 border-b-0 border-neo-black transition-all duration-500 ease-out origin-bottom relative neo-shadow-x" style="height: 0%;" data-height="${pct}%" onmouseover="this.style.backgroundColor='var(--brand-black)'" onmouseout="this.style.backgroundColor=''">
+                    <div class="relative w-full h-[200px] flex items-end justify-center">
+                        <div class="w-[80%] max-w-[60px] ${bgColor} border border-b-0 border-[rgba(255,255,255,0.1)] transition-all duration-500 ease-out origin-bottom relative shadow-[0_0_15px_rgba(255,255,255,0.1)] rounded-t-sm" style="height: 0%;" data-height="${pct}%" onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='none'">
                         </div>
                     </div>
-                    <div class="mt-4 tech-font text-xs font-bold text-neo-black border-t-2 border-neo-black w-full text-center pt-2">${lbl}</div>
+                    <div class="mt-4 tech-font text-xs font-bold text-[var(--text-secondary)] border-t border-[rgba(255,255,255,0.1)] w-full text-center pt-2">${lbl}</div>
                 </div>
                 `;
                 });
@@ -289,7 +323,7 @@
                 }, 100);
 
             } else {
-                chartContainer.innerHTML = '<div class="text-center tech-font text-gray-400 w-full font-bold">>> NO DB DATA <<</div>';
+                chartContainer.innerHTML = '<div class="text-center tech-font text-[var(--text-muted)] w-full font-bold">>> NO DB DATA <<</div>';
             }
 
         } catch (e) {
@@ -297,10 +331,10 @@
         }
     }
 
-    async function loadVulnList() {
+    async function loadVulnList(params) {
         const tbody = document.getElementById('vulnTableBody');
         try {
-            const res = await fetch('/api/vulnerabilities');
+            const res = await fetch('/api/vulnerabilities?' + params);
             const data = await res.json();
 
             if (data.error) throw new Error(data.error);
@@ -314,39 +348,43 @@
             tbody.innerHTML = '';
             data.forEach(v => {
                 const sevColors = {
-                    '5': 'bg-neo-danger text-white border-neo-black',
-                    '4': 'bg-neo-warning text-white border-neo-black',
-                    '3': 'bg-neo-yellow text-neo-black border-neo-black',
-                    '2': 'bg-neo-acid text-neo-black border-neo-black',
-                    '1': 'bg-gray-200 text-neo-black border-neo-black'
+                    '5': 'color: var(--danger);',
+                    '4': 'color: var(--warning);',
+                    '3': 'color: #eab308;',
+                    '2': 'color: var(--success);',
+                    '1': 'color: var(--text-muted);'
                 };
                 const sc = sevColors[v.severity] || sevColors['1'];
 
                 const tr = document.createElement('tr');
-                tr.className = "hover-bg-neo-acid-light transition-colors group";
+                tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+                tr.addEventListener('mouseover', () => tr.style.background = 'rgba(255,255,255,0.02)');
+                tr.addEventListener('mouseout', () => tr.style.background = 'transparent');
+
                 tr.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-xs font-black text-neo-black hidden md:table-cell border-r-2 border-neo-black group-hover-bg-neo-acid transition-colors">
+                <td style="padding: 16px; font-weight: 700; color: var(--text-secondary); font-size: 0.85rem;">
                     #${v.qid}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap border-r-2 border-neo-black">
-                    <span class="inline-block px-3 py-1 font-black text-[10px] uppercase border-2 neo-shadow-dark ${sc}">
+                <td style="padding: 16px;">
+                    <span style="${sc} font-weight: 800; text-transform: uppercase; font-size: 0.75rem; background: rgba(255,255,255,0.03); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
                         LVL ${v.severity}
                     </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap border-r-2 border-neo-black">
-                    <div class="text-sm font-black text-neo-black uppercase">${v.asset_name}</div>
-                    <div class="text-[10px] text-gray-500 mt-1 uppercase">IP: ${v.asset_ip || '---'} | DB: ${v.db_type || 'UNK'}</div>
+                <td style="padding: 16px;">
+                    <div style="font-weight: 700; color: var(--text-primary); text-transform: uppercase;">${v.asset_name}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; text-transform: uppercase;">IP: ${v.asset_ip || '---'} | DB: ${v.db_type || 'UNK'}</div>
                 </td>
-                <td class="px-6 py-4 border-r-2 border-neo-black">
-                    <div class="text-xs font-bold text-neo-black uppercase line-clamp-2" title="${v.title}">
+                <td style="padding: 16px;">
+                    <span style="display: inline-block; padding: 2px 8px; margin-bottom: 6px; font-weight: 700; font-size: 0.65rem; text-transform: uppercase; background: rgba(0,136,238,0.1); color: var(--accent-secondary); border-radius: 4px; border: 1px solid rgba(0,136,238,0.2);">${v.squad || '---'}</span>
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${v.title}">
                         ${v.title}
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-[10px] font-black uppercase text-gray-500 hidden lg:table-cell border-r-2 border-neo-black">
+                <td style="padding: 16px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);" class="hidden lg:table-cell">
                     ${v.environment || '---'}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap hidden xl:table-cell">
-                    <span class="inline-block px-2 py-1 font-bold text-[10px] uppercase border border-neo-black bg-gray-100 text-neo-black">
+                <td style="padding: 16px; border-right: none;" class="hidden xl:table-cell">
+                    <span style="display: inline-block; padding: 4px 8px; font-weight: 700; font-size: 0.65rem; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); color: var(--text-secondary); border-radius: 4px;">
                       ${v.cmdb_status || '---'}
                     </span>
                 </td>

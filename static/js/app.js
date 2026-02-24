@@ -24,7 +24,7 @@ const API = {
         return resp.json();
     },
 
-    dashboard: () => API.get('/api/dashboard'),
+    dashboard: (client = 'Todos') => API.get('/api/dashboard?client=' + encodeURIComponent(client)),
     servers: (params) => API.get('/api/servers?' + new URLSearchParams(params)),
     gmuds: (params) => API.get('/api/gmuds?' + new URLSearchParams(params)),
     cmdb: (params) => API.get('/api/cmdb?' + new URLSearchParams(params)),
@@ -180,22 +180,56 @@ async function triggerImport() {
 
     btn.disabled = true;
     btn.style.opacity = '0.5';
-    status.textContent = 'Importando...';
+    status.textContent = 'Enviando...';
     status.style.color = 'var(--warning)';
 
     try {
         const result = await API.importData();
-        status.textContent = 'Import concluído!';
-        status.style.color = 'var(--success)';
-        showToast('Dados importados com sucesso! Recarregando...', 'success');
-        setTimeout(() => location.reload(), 1500);
+
+        if (result.task_id) {
+            const taskId = result.task_id;
+            status.textContent = '⚙️ Processando em 2º plano...';
+
+            const pollInterval = setInterval(async () => {
+                try {
+                    const resp = await fetch(`/api/task-status/${taskId}`);
+                    const taskData = await resp.json();
+
+                    if (taskData.status === 'success') {
+                        clearInterval(pollInterval);
+                        status.textContent = '✅ Import concluído!';
+                        status.style.color = 'var(--success)';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        showToast('Dados importados com sucesso! Recarregando...', 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else if (taskData.status === 'error') {
+                        clearInterval(pollInterval);
+                        status.textContent = '❌ Erro no import!';
+                        status.style.color = 'var(--danger)';
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        showToast('Erro ao importar: ' + taskData.message, 'error');
+                    }
+                    // else 'processing' → wait next interval
+                } catch (pollErr) {
+                    console.error('Polling error:', pollErr);
+                }
+            }, 1500);
+        } else {
+            // Fallback: resposta síncrona legada
+            status.textContent = result.status === 'success' ? '✅ Import concluído!' : '❌ Erro!';
+            status.style.color = result.status === 'success' ? 'var(--success)' : 'var(--danger)';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            if (result.status === 'success') setTimeout(() => location.reload(), 1500);
+        }
     } catch (e) {
         status.textContent = 'Erro no import!';
         status.style.color = 'var(--danger)';
-        showToast('Erro ao importar: ' + e.message, 'error');
-    } finally {
         btn.disabled = false;
         btn.style.opacity = '1';
+        showToast('Erro ao importar: ' + e.message, 'error');
     }
 }
 

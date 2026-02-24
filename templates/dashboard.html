@@ -9,6 +9,30 @@
 
 {% block content %}
 
+<div class="header-actions"
+    style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+    <h3 style="color: var(--text-secondary); margin: 0; font-size: 1.1rem;">Visão Geral do Ambiente</h3>
+
+    {% if not current_user.client_restriction or current_user.client_restriction == 'none' %}
+    <div style="display: flex; gap: 1rem; align-items: center;">
+        <label style="color: var(--text-muted); font-size: 0.9rem;">Visão Cliente:</label>
+        <select id="globalClientFilter" onchange="loadDashboard(this.value)"
+            style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--brand-cyan); border-radius: 4px; outline: none; cursor: pointer; min-width: 150px;">
+            <option value="Todos" style="background:#05050A">Global (Todos)</option>
+            <option value="GetNet" style="background:#05050A">GetNet</option>
+            <option value="PagoNxt" style="background:#05050A">PagoNxt</option>
+        </select>
+    </div>
+    {% else %}
+    <div style="display: flex; gap: 1rem; align-items: center;">
+        <span
+            style="color: var(--brand-cyan); padding: 0.5rem 1rem; background: rgba(0, 136, 238, 0.1); border: 1px solid rgba(0, 136, 238, 0.3); border-radius: 4px; font-weight: bold;">
+            Visão Restrita: {{ current_user.client_restriction }}
+        </span>
+    </div>
+    {% endif %}
+</div>
+
 <div class="kpi-grid" id="kpiGrid">
     <div class="kpi-card accent-1">
         <div class="kpi-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -325,8 +349,16 @@
 <script>
     document.addEventListener('DOMContentLoaded', async () => {
         applyChartDefaults();
+        await loadDashboard();
+    });
+
+    async function loadDashboard(clientFilter = null) {
         try {
-            const data = await API.dashboard();
+            if (!clientFilter) {
+                const select = document.getElementById('globalClientFilter');
+                clientFilter = select ? select.value : 'Todos';
+            }
+            const data = await API.dashboard(clientFilter);
             renderKPIs(data);
             renderEnvGrid(data);
             renderPsuChart(data);
@@ -338,7 +370,7 @@
             console.error('Dashboard error:', e);
             showToast('Erro ao carregar dashboard: ' + e.message, 'error');
         }
-    });
+    }
 
     function renderKPIs(data) {
         animateValue(document.getElementById('kpiServers'), 0, data.total_servers);
@@ -382,32 +414,47 @@
     function renderPsuChart(data) {
         const el = document.getElementById('chartPsu');
         if (!el) return;
+        let existing = Chart.getChart(el);
+        if (existing) existing.destroy();
+
         const psuData = data.servers_by_psu.filter(s => s.psu_version && s.psu_version.trim());
-        const brutalPalette = ['#a3e635', '#0F172A', '#f97316', '#ef4444', '#eab308', '#ec4899'];
         if (!psuData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados de PSU</p></div>'; return; }
         new Chart(el.getContext('2d'), {
             type: 'doughnut',
-            data: { labels: psuData.map(s => 'PSU ' + s.psu_version), datasets: [{ data: psuData.map(s => s.cnt), backgroundColor: brutalPalette.slice(0, psuData.length), hoverOffset: 6, borderColor: '#000', borderWidth: 2 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { padding: 10, font: { family: 'Space Mono', size: 10 } } } } }
+            data: { labels: psuData.map(s => 'PSU ' + s.psu_version), datasets: [{ data: psuData.map(s => s.cnt), backgroundColor: CHART_COLORS.palette.slice(0, psuData.length), hoverOffset: 6, borderColor: 'rgba(255,255,255,0.05)', borderWidth: 2 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { padding: 10, color: '#a0a0cc', font: { size: 10 } } } } }
         });
     }
 
     function renderGmudStatusChart(data) {
         const el = document.getElementById('chartGmudStatus');
         if (!el) return;
+        let existing = Chart.getChart(el);
+        if (existing) existing.destroy();
+
         const statusData = data.gmuds_by_status.filter(s => s.status && s.status.trim());
         if (!statusData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados de GMUDs</p></div>'; return; }
-        const statusColors = { 'ENCERRADA': '#a3e635', 'Encerrada': '#a3e635', 'IMPLEMENTAR': '#0F172A', 'REPLANEJAR': '#f97316', 'REPLANEJADA': '#f97316', 'CANCELADA': '#ef4444', 'PROGRAMADA': '#eab308', 'NOVO': '#94a3b8', 'FREEZING': '#000000', 'AUTORIZAR': '#f97316', 'AVALIAR': '#ec4899' };
+        const statusColors = {
+            'ENCERRADA': '#10b981', 'Encerrada': '#10b981',
+            'IMPLEMENTAR': '#3b82f6', 'REPLANEJAR': '#f59e0b', 'REPLANEJADA': '#f59e0b',
+            'CANCELADA': '#ef4444', 'PROGRAMADA': '#06b6d4',
+            'NOVO': '#94a3b8', 'FREEZING': '#8b5cf6',
+            'AUTORIZAR': '#f97316', 'AVALIAR': '#ec4899',
+            'REAGENDADA': '#0088ee', 'INSUCESSO': '#dc2626', 'CAR': '#14b8a6', 'REVISÃO': '#84cc16'
+        };
         new Chart(el.getContext('2d'), {
             type: 'doughnut',
-            data: { labels: statusData.map(s => s.status), datasets: [{ data: statusData.map(s => s.cnt), backgroundColor: statusData.map(s => statusColors[s.status] || '#0F172A'), hoverOffset: 6, borderColor: '#000', borderWidth: 2 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { padding: 10, font: { family: 'Space Mono', size: 10 } } } } }
+            data: { labels: statusData.map(s => s.status), datasets: [{ data: statusData.map(s => s.cnt), backgroundColor: statusData.map(s => statusColors[s.status] || '#64748b'), hoverOffset: 6, borderColor: 'rgba(255,255,255,0.05)', borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { padding: 10, color: '#a0a0cc', font: { size: 10 } } } } }
         });
     }
 
     function renderMonthlyChart(data) {
         const el = document.getElementById('chartMonthly');
         if (!el) return;
+        let existing = Chart.getChart(el);
+        if (existing) existing.destroy();
+
         const months = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
         const sorted = data.gmuds_by_month.sort((a, b) => a.year * 100 + a.month - (b.year * 100 + b.month));
         if (!sorted.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados mensais</p></div>'; return; }
@@ -415,25 +462,27 @@
         const values = sorted.map(m => m.cnt);
         const ctx = el.getContext('2d');
         const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, '#0F172A');
-        gradient.addColorStop(1, '#a3e635');
+        gradient.addColorStop(0, 'rgba(0, 136, 238, 0.9)');
+        gradient.addColorStop(1, 'rgba(0, 187, 255, 0.3)');
         new Chart(ctx, {
             type: 'bar',
-            data: { labels, datasets: [{ label: 'GMUDs', data: values, backgroundColor: gradient, borderColor: '#000', borderWidth: 2, borderRadius: 0, borderSkipped: false, barPercentage: 0.7 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { family: 'Space Mono', size: 10 } } }, y: { beginAtZero: true, ticks: { precision: 0, font: { family: 'Space Mono', size: 10 } } } } }
+            data: { labels, datasets: [{ label: 'GMUDs', data: values, backgroundColor: gradient, borderColor: 'rgba(0, 187, 255, 0.5)', borderWidth: 1, borderRadius: 4, borderSkipped: false, barPercentage: 0.7 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#a0a0cc', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { beginAtZero: true, ticks: { precision: 0, color: '#a0a0cc', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } } } }
         });
     }
 
     function renderDbTypeChart(data) {
         const el = document.getElementById('chartDbType');
         if (!el) return;
+        let existing = Chart.getChart(el);
+        if (existing) existing.destroy();
+
         const dbData = data.cmdb_by_type.filter(t => t.db_type && t.db_type.trim());
-        const brutalPalette = ['#0F172A', '#a3e635', '#f97316', '#ef4444'];
         if (!dbData.length) { el.parentElement.innerHTML = '<div class="empty-state"><p>Sem dados CMDB</p></div>'; return; }
         new Chart(el.getContext('2d'), {
             type: 'bar',
-            data: { labels: dbData.map(d => d.db_type), datasets: [{ label: 'Quantidade', data: dbData.map(d => d.cnt), backgroundColor: brutalPalette.slice(0, dbData.length), borderColor: '#000', borderWidth: 2, borderRadius: 0, borderSkipped: false, barPercentage: 0.6 }] },
-            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { y: { ticks: { font: { family: 'Space Mono', size: 10 } } }, x: { beginAtZero: true, ticks: { precision: 0, font: { family: 'Space Mono', size: 10 } } } } }
+            data: { labels: dbData.map(d => d.db_type), datasets: [{ label: 'Quantidade', data: dbData.map(d => d.cnt), backgroundColor: CHART_COLORS.palette.slice(0, dbData.length), borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderRadius: 4, borderSkipped: false, barPercentage: 0.6 }] },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#a0a0cc', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } }, x: { beginAtZero: true, ticks: { precision: 0, color: '#a0a0cc', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } } } }
         });
     }
 
@@ -519,17 +568,14 @@
             return;
         }
 
-        // UI: mostrar progresso
+        // UI: mostrar progresso e bloquear botões
         zone.classList.remove('success', 'error');
         progress.style.display = 'block';
-        bar.style.width = '30%';
-        status.textContent = `Enviando ${file.name}...`;
+        bar.style.width = '10%';
+        status.textContent = `Iniciando envio de ${file.name}...`;
         btn.disabled = true;
 
         try {
-            bar.style.width = '60%';
-            status.textContent = 'Importando dados... (pode levar alguns segundos)';
-
             const response = await fetch(endpoint, {
                 method: 'POST',
                 body: formData
@@ -537,21 +583,49 @@
 
             const result = await response.json();
 
-            if (response.ok && result.status === 'success') {
-                bar.style.width = '100%';
-                status.textContent = '✅ ' + result.message;
-                zone.classList.add('success');
-                showToast(result.message, 'success');
+            if (response.ok && result.task_id) {
+                const taskId = result.task_id;
+                bar.style.width = '40%';
+                status.textContent = 'Processando em 2º plano (Polling)...';
 
-                // Recarregar dashboard após 1.5s para refletir novos dados
-                setTimeout(() => {
-                    location.reload();
+                // Iniciar rotina de Polling do backend
+                const pollInterval = setInterval(async () => {
+                    try {
+                        const statusResp = await fetch(`/api/task-status/${taskId}`);
+                        const taskData = await statusResp.json();
+
+                        if (taskData.status === 'success') {
+                            clearInterval(pollInterval);
+                            bar.style.width = '100%';
+                            status.textContent = '✅ ' + taskData.message;
+                            zone.classList.add('success');
+                            showToast(taskData.message, 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else if (taskData.status === 'error') {
+                            clearInterval(pollInterval);
+                            bar.style.width = '100%';
+                            bar.style.background = 'var(--danger, #ef4444)';
+                            status.textContent = '❌ ' + taskData.message;
+                            zone.classList.add('error');
+                            btn.disabled = false;
+                            showToast(taskData.message, 'error');
+                        } else {
+                            // Status 'processing'
+                            // Faz a barra pular um pouquinho pra mostrar atividade
+                            let currentWidth = parseInt(bar.style.width);
+                            if (currentWidth < 90) bar.style.width = String(currentWidth + 2) + '%';
+                        }
+                    } catch (pollErr) {
+                        console.error('Falha de polling:', pollErr);
+                    }
                 }, 1500);
+
             } else {
                 bar.style.width = '100%';
                 bar.style.background = 'var(--danger, #ef4444)';
                 status.textContent = '❌ ' + (result.message || 'Erro na importação');
                 zone.classList.add('error');
+                btn.disabled = false;
                 showToast(result.message || 'Erro na importação', 'error');
             }
         } catch (err) {

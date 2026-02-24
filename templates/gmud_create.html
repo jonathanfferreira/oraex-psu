@@ -7,29 +7,73 @@
     <div class="gmud-form-container fade-in">
         <form id="gmudForm" onsubmit="event.preventDefault(); submitGmud();">
             <div class="form-row">
-                <div class="form-group"><label for="client">Cliente</label><select id="client" name="client" required onchange="updatePreview()"><option value="GetNet">GetNet</option><option value="PagoNxt">PagoNxt</option></select></div>
-                <div class="form-group"><label for="db_type">Tipo de Banco</label><select id="db_type" name="db_type" onchange="updatePreview()"><option value="Oracle">Oracle</option><option value="SQL Server">SQL Server</option><option value="MySQL">MySQL</option><option value="PostgreSQL">PostgreSQL</option><option value="MongoDB">MongoDB</option></select></div>
-                <div class="form-group"><label for="environment">Ambiente</label><select id="environment" name="environment" onchange="updatePreview()"><option value="PROD">PROD</option><option value="PRE">PRE</option><option value="HML">HML</option></select></div>
-                <div class="form-group"><label for="psu_version">Versão PSU</label><select id="psu_version" name="psu_version" onchange="updatePreview()"><option value="19.30">19.30</option><option value="19.29">19.29</option><option value="19.28">19.28</option><option value="19.27">19.27</option></select></div>
+                <div class="form-group"><label for="client">Cliente</label><select id="client" name="client" required
+                        onchange="updatePreview()">
+                        <option value="GetNet">GetNet</option>
+                        <option value="PagoNxt">PagoNxt</option>
+                    </select></div>
+                <div class="form-group"><label for="db_type">Tipo de Banco</label><select id="db_type" name="db_type"
+                        onchange="updatePreview()">
+                        <option value="Oracle">Oracle</option>
+                        <option value="SQL Server">SQL Server</option>
+                        <option value="MySQL">MySQL</option>
+                        <option value="PostgreSQL">PostgreSQL</option>
+                        <option value="MongoDB">MongoDB</option>
+                    </select></div>
+                <div class="form-group"><label for="environment">Ambiente</label><select id="environment"
+                        name="environment" onchange="updatePreview()">
+                        <option value="PROD">PROD</option>
+                        <option value="PRE">PRE</option>
+                        <option value="HML">HML</option>
+                    </select></div>
+                <div class="form-group"><label for="psu_version">Versão PSU</label><select id="psu_version"
+                        name="psu_version" onchange="updatePreview()">
+                        <option value="19.30">19.30</option>
+                        <option value="19.29">19.29</option>
+                        <option value="19.28">19.28</option>
+                        <option value="19.27">19.27</option>
+                    </select></div>
             </div>
-            <div class="form-group full-width"><label for="hostnames">Hostnames (Separe por vírgula ou busque)</label><div class="search-wrapper"><input type="text" id="hostnames" name="hostnames" placeholder="Ex: srv-db-01, srv-db-02" oninput="handleHostInput()" required><div id="hostSuggestions" class="suggestions-box hidden"></div></div></div>
-            <div class="form-group full-width"><label for="title">Título (Gerado Automático)</label><input type="text" id="title" name="title" readonly class="readonly-input"></div>
+            <div class="form-group full-width"><label for="hostnames">Hostnames (Separe por vírgula ou busque)</label>
+                <div class="search-wrapper"><input type="text" id="hostnames" name="hostnames"
+                        placeholder="Ex: srv-db-01, srv-db-02" oninput="handleHostInput()" required>
+                    <div id="hostSuggestions" class="suggestions-box hidden"></div>
+                </div>
+            </div>
+            <div class="form-group full-width"><label for="title">Título (Gerado Automático)</label><input type="text"
+                    id="title" name="title" readonly class="readonly-input"></div>
             <div class="form-row">
-                <div class="form-group"><label for="start_date">Data Início</label><input type="datetime-local" id="start_date" name="start_date" required onchange="updatePreview()"></div>
-                <div class="form-group"><label for="end_date">Data Fim</label><input type="datetime-local" id="end_date" name="end_date" required></div>
-                <div class="form-group"><label for="status">Status</label><select id="status" name="status"><option value="Agendada">Agendada</option><option value="Planejada">Planejada</option><option value="Em Execução">Em Execução</option></select></div>
+                <div class="form-group"><label for="start_date">Data Início</label><input type="datetime-local"
+                        id="start_date" name="start_date" required onchange="updatePreview()"></div>
+                <div class="form-group"><label for="end_date">Data Fim</label><input type="datetime-local" id="end_date"
+                        name="end_date" required></div>
+                <div class="form-group"><label for="status">Status</label><select id="status" name="status">
+                        <option value="Agendada">Agendada</option>
+                        <option value="Planejada">Planejada</option>
+                        <option value="Em Execução">Em Execução</option>
+                    </select></div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label for="change_number">GMUD / Change Number</label><input type="text" id="change_number" name="change_number" placeholder="Ex: CHG000123"></div>
-                <div class="form-group"><label for="assigned_to">Responsável Técnico</label><input type="text" id="assigned_to" name="assigned_to" placeholder="Nome do DBA"></div>
-                <div class="form-group"><label for="opened_by">Aberto Por</label><input type="text" id="opened_by" name="opened_by" placeholder="Quem abriu o chamado"></div>
+                <div class="form-group"><label for="change_number">GMUD / Change Number</label><input type="text"
+                        id="change_number" name="change_number" placeholder="Ex: CHG000123"></div>
+                <div class="form-group"><label for="assigned_to">Responsável Técnico</label><input type="text"
+                        id="assigned_to" name="assigned_to" placeholder="Nome do DBA"></div>
+                <div class="form-group"><label for="opened_by">Aberto Por / Autor</label><input type="text"
+                        id="opened_by" name="opened_by" value="{{ current_user.display_name or current_user.username }}"
+                        readonly class="readonly-input"></div>
             </div>
-            <div class="form-group full-width"><label for="observation">Observações / Plano de Ação</label><textarea id="observation" name="observation" rows="3"></textarea></div>
-            <div class="form-group full-width"><label for="vulnerability">Vulnerabilidade (Opcional)</label><input type="text" id="vulnerability" name="vulnerability"></div>
+            <div class="form-group full-width"><label for="observation">Observações / Plano de Ação</label><textarea
+                    id="observation" name="observation" rows="3"></textarea></div>
+            <div class="form-group full-width"><label for="vulnerability">Vulnerabilidade (Opcional)</label><input
+                    type="text" id="vulnerability" name="vulnerability"></div>
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" onclick="window.history.back()">Cancelar</button>
                 <button type="submit" class="btn btn-primary" id="submitBtn">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                        <polyline points="17 21 17 13 7 13 7 21" />
+                        <polyline points="7 3 7 8 15 8" />
+                    </svg>
                     Criar e Exportar para Excel
                 </button>
             </div>
@@ -37,47 +81,47 @@
     </div>
 </div>
 <script>
-let searchTimeout;
-document.addEventListener("DOMContentLoaded", () => {
-    const now = new Date(); now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
-    document.getElementById('start_date').value = now.toISOString().slice(0,16);
-    const end = new Date(now); end.setHours(end.getHours()+2);
-    document.getElementById('end_date').value = end.toISOString().slice(0,16);
-    updatePreview();
-});
-function handleHostInput() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { const q = document.getElementById('hostnames').value; if (q.length>2) searchHosts(q); updatePreview(); }, 500); }
-async function searchHosts(query) {
-    const parts = query.split(','); const last = parts[parts.length-1].trim();
-    if (last.length<2) { document.getElementById('hostSuggestions').classList.add('hidden'); return; }
-    try {
-        const res = await fetch(`/api/hostnames?search=${encodeURIComponent(last)}`);
-        const results = await res.json(); const box = document.getElementById('hostSuggestions');
-        if (!results.length) { box.classList.add('hidden'); return; }
-        box.innerHTML = results.map(r=>`<div class="suggestion-item" onclick="selectHost('${r.hostname.replace(/'/g,"\\'")}')"><span class="suggestion-hostname">${r.hostname}</span><span class="suggestion-source">${r.source}</span></div>`).join('');
-        box.classList.remove('hidden');
-    } catch(e) { console.error('Host search error:',e); }
-}
-function selectHost(hostname) { const inp = document.getElementById('hostnames'); const parts = inp.value.split(',').map(p=>p.trim()).filter(p=>p); if(parts.length>0) parts[parts.length-1]=hostname; else parts.push(hostname); inp.value = parts.join(', ')+', '; document.getElementById('hostSuggestions').classList.add('hidden'); inp.focus(); updatePreview(); }
-document.addEventListener('click',(e)=>{ if(!e.target.closest('.search-wrapper')) document.getElementById('hostSuggestions').classList.add('hidden'); });
-function updatePreview() {
-    const client = document.getElementById('client').value;
-    const hosts = document.getElementById('hostnames').value || '[Hostnames]';
-    const psu = document.getElementById('psu_version').value;
-    let prefix = "[Escopo Fechado - BD]";
-    if (client === 'PagoNxt') prefix = "[PagoNxt - BD]";
-    document.getElementById('title').value = `${prefix} Atualização PSU ${psu} conforme orientação Oracle | ${hosts}`;
-}
-async function submitGmud() {
-    const btn = document.getElementById('submitBtn'); const orig = btn.innerHTML;
-    btn.disabled = true; btn.innerHTML = '⏳ Processando...';
-    const data = Object.fromEntries(new FormData(document.getElementById('gmudForm')).entries());
-    try {
-        const res = await fetch('/api/gmud/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-        const result = await res.json();
-        if(res.ok){alert('Sucesso! '+result.message);window.location.href='/gmud';}
-        else alert('Erro: '+result.message);
-    } catch(e){alert('Erro: '+e);}
-    finally{btn.disabled=false;btn.innerHTML=orig;}
-}
+    let searchTimeout;
+    document.addEventListener("DOMContentLoaded", () => {
+        const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('start_date').value = now.toISOString().slice(0, 16);
+        const end = new Date(now); end.setHours(end.getHours() + 2);
+        document.getElementById('end_date').value = end.toISOString().slice(0, 16);
+        updatePreview();
+    });
+    function handleHostInput() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { const q = document.getElementById('hostnames').value; if (q.length > 2) searchHosts(q); updatePreview(); }, 500); }
+    async function searchHosts(query) {
+        const parts = query.split(','); const last = parts[parts.length - 1].trim();
+        if (last.length < 2) { document.getElementById('hostSuggestions').classList.add('hidden'); return; }
+        try {
+            const res = await fetch(`/api/hostnames?search=${encodeURIComponent(last)}`);
+            const results = await res.json(); const box = document.getElementById('hostSuggestions');
+            if (!results.length) { box.classList.add('hidden'); return; }
+            box.innerHTML = results.map(r => `<div class="suggestion-item" onclick="selectHost('${r.hostname.replace(/'/g, "\\'")}')"><span class="suggestion-hostname">${r.hostname}</span><span class="suggestion-source">${r.source}</span></div>`).join('');
+            box.classList.remove('hidden');
+        } catch (e) { console.error('Host search error:', e); }
+    }
+    function selectHost(hostname) { const inp = document.getElementById('hostnames'); const parts = inp.value.split(',').map(p => p.trim()).filter(p => p); if (parts.length > 0) parts[parts.length - 1] = hostname; else parts.push(hostname); inp.value = parts.join(', ') + ', '; document.getElementById('hostSuggestions').classList.add('hidden'); inp.focus(); updatePreview(); }
+    document.addEventListener('click', (e) => { if (!e.target.closest('.search-wrapper')) document.getElementById('hostSuggestions').classList.add('hidden'); });
+    function updatePreview() {
+        const client = document.getElementById('client').value;
+        const hosts = document.getElementById('hostnames').value || '[Hostnames]';
+        const psu = document.getElementById('psu_version').value;
+        let prefix = "[Escopo Fechado - BD]";
+        if (client === 'PagoNxt') prefix = "[PagoNxt - BD]";
+        document.getElementById('title').value = `${prefix} Atualização PSU ${psu} conforme orientação Oracle | ${hosts}`;
+    }
+    async function submitGmud() {
+        const btn = document.getElementById('submitBtn'); const orig = btn.innerHTML;
+        btn.disabled = true; btn.innerHTML = '⏳ Processando...';
+        const data = Object.fromEntries(new FormData(document.getElementById('gmudForm')).entries());
+        try {
+            const res = await fetch('/api/gmud/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const result = await res.json();
+            if (res.ok) { alert('Sucesso! ' + result.message); window.location.href = '/gmud'; }
+            else alert('Erro: ' + result.message);
+        } catch (e) { alert('Erro: ' + e); }
+        finally { btn.disabled = false; btn.innerHTML = orig; }
+    }
 </script>
 {% endblock %}

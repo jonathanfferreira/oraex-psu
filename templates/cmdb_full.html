@@ -7,9 +7,13 @@
 <div class="content">
     <div class="cmdb-header-actions">
         <div class="filter-group">
+            {% if not current_user.client_restriction or current_user.client_restriction == 'none' %}
             <select id="filterClient" class="filter-select" onchange="applyFilters()">
                 <option value="">Todos os Clientes</option>
             </select>
+            {% else %}
+            <input type="hidden" id="filterClient" value="{{ current_user.client_restriction }}">
+            {% endif %}
             <select id="filterDbType" class="filter-select" onchange="applyFilters()">
                 <option value="">Todas Tecnologias</option>
             </select>
@@ -295,15 +299,52 @@
 
     async function triggerCMDBImport() {
         if (!confirm("Re-importar toda a base CMDB Full? Pode levar alguns segundos.")) return;
-        const btn = event.target; const orig = btn.innerHTML;
-        btn.disabled = true; btn.innerHTML = '⏳ Importando...';
+        const btn = event.target || document.querySelector('button[onclick="triggerCMDBImport()"]');
+        const orig = btn.innerHTML;
+        btn.disabled = true; btn.innerHTML = '⏳ Preparando...';
+
         try {
             const res = await fetch('/api/import-cmdb-full', { method: 'POST' });
             const data = await res.json();
-            if (data.status === 'success') { showToast('Importação concluída!', 'success'); loadFilters(); applyFilters(); }
-            else showToast('Erro: ' + data.message, 'error');
-        } catch (e) { showToast('Erro: ' + e, 'error'); }
-        finally { btn.disabled = false; btn.innerHTML = orig; }
+
+            if (data.status === 'processing' && data.task_id) {
+                btn.innerHTML = '⚙️ Processando...';
+                const taskId = data.task_id;
+
+                const pollInterval = setInterval(async () => {
+                    try {
+                        const statusResp = await fetch(`/api/task-status/${taskId}`);
+                        const taskData = await statusResp.json();
+
+                        if (taskData.status === 'success') {
+                            clearInterval(pollInterval);
+                            showToast('Importação concluída!', 'success');
+                            btn.disabled = false; btn.innerHTML = orig;
+                            loadFilters(); applyFilters();
+                        } else if (taskData.status === 'error') {
+                            clearInterval(pollInterval);
+                            showToast('Erro: ' + taskData.message, 'error');
+                            btn.disabled = false; btn.innerHTML = orig;
+                        } else {
+                            // still processing
+                            if (btn.innerHTML.includes('...')) btn.innerHTML = '⚙️ Processando';
+                            else btn.innerHTML += '.';
+                        }
+                    } catch (e) { console.error('Polling error', e); }
+                }, 1500);
+
+            } else if (data.status === 'success') {
+                showToast('Importação concluída!', 'success');
+                btn.disabled = false; btn.innerHTML = orig;
+                loadFilters(); applyFilters();
+            } else {
+                showToast('Erro: ' + data.message, 'error');
+                btn.disabled = false; btn.innerHTML = orig;
+            }
+        } catch (e) {
+            showToast('Erro: ' + e, 'error');
+            btn.disabled = false; btn.innerHTML = orig;
+        }
     }
 </script>
 {% endblock %}

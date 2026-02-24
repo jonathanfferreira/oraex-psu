@@ -254,6 +254,7 @@ def init_db():
             password_hash TEXT NOT NULL,
             display_name TEXT,
             role TEXT DEFAULT 'viewer',
+            client_restriction TEXT DEFAULT 'none',
             is_active INTEGER DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -286,20 +287,27 @@ def init_db():
 #  QUERY FUNCTIONS
 # ══════════════════════════════════════════════════════════
 
-def get_dashboard_stats():
+def get_dashboard_stats(client=None):
     """Get KPI numbers for the dashboard."""
     conn = get_connection()
     c = conn.cursor()
 
     stats = {}
+    
+    # Prepara restrições de cliente com base no sistema que o usuário preencheu ou solicitou
+    gmuds_client_filter = " AND client = ?" if client and client != 'none' else ""
+    cmdb_client_filter = " WHERE client = ?" if client and client != 'none' else ""
+    client_param = [client] if client and client != 'none' else []
 
-    # Total Oracle servers (counting standby as separate servers)
-    c.execute("SELECT COALESCE(SUM(total_servers), 0) FROM servers")
-    stats["total_servers"] = c.fetchone()[0]
-
-    # Total rows (pairs)
-    c.execute("SELECT COUNT(*) FROM servers")
-    stats["total_rows"] = c.fetchone()[0]
+    # Total Oracle servers (servers is mostly GetNet)
+    if client == 'PagoNxt':
+        stats["total_servers"] = 0
+        stats["total_rows"] = 0
+    else:
+        c.execute("SELECT COALESCE(SUM(total_servers), 0) FROM servers")
+        stats["total_servers"] = c.fetchone()[0]
+        c.execute("SELECT COUNT(*) FROM servers")
+        stats["total_rows"] = c.fetchone()[0]
 
     # Servers with GGS
     c.execute("SELECT COUNT(*) FROM servers WHERE has_ggs = 1")
@@ -334,70 +342,74 @@ def get_dashboard_stats():
     c.execute("SELECT COUNT(*) FROM cmdb_databases")
     stats["total_cmdb"] = c.fetchone()[0]
 
-    # Total CMDB Full (added for Phase 0 consistency)
-    c.execute("SELECT COUNT(*) FROM cmdb_full")
+    # Total CMDB Full
+    c.execute(f"SELECT COUNT(*) FROM cmdb_full{cmdb_client_filter}", client_param)
     stats["total_cmdb_full"] = c.fetchone()[0]
 
-    # CMDB by type
-    c.execute("""
+    # CMDB by type (using cmdb_full is better if we have client filters)
+    c.execute(f"""
         SELECT db_type, COUNT(*) as cnt
-        FROM cmdb_databases
+        FROM cmdb_full
         WHERE db_type IS NOT NULL AND db_type != ''
+        {cmdb_client_filter.replace('WHERE', 'AND')}
         GROUP BY db_type
         ORDER BY cnt DESC
-    """)
+    """, client_param)
     stats["cmdb_by_type"] = [dict(r) for r in c.fetchall()]
 
     # GMUDs stats
-    c.execute("SELECT COUNT(*) FROM gmuds")
+    c.execute(f"SELECT COUNT(*) FROM gmuds WHERE 1=1 {gmuds_client_filter}", client_param)
     stats["total_gmuds"] = c.fetchone()[0]
 
-    c.execute("""
+    c.execute(f"""
         SELECT status, COUNT(*) as cnt
         FROM gmuds
-        WHERE status IS NOT NULL AND status != ''
+        WHERE status IS NOT NULL AND status != '' {gmuds_client_filter}
         GROUP BY status
         ORDER BY cnt DESC
-    """)
+    """, client_param)
     stats["gmuds_by_status"] = [dict(r) for r in c.fetchall()]
 
     # GMUDs by month
-    c.execute("""
+    c.execute(f"""
         SELECT year, month, COUNT(*) as cnt
         FROM gmuds
+        WHERE 1=1 {gmuds_client_filter}
         GROUP BY year, month
         ORDER BY year, month
-    """)
+    """, client_param)
     stats["gmuds_by_month"] = [dict(r) for r in c.fetchall()]
 
     # GMUDs by assigned person
-    c.execute("""
+    c.execute(f"""
         SELECT assigned_to, COUNT(*) as cnt
         FROM gmuds
-        WHERE assigned_to IS NOT NULL AND assigned_to != ''
+        WHERE assigned_to IS NOT NULL AND assigned_to != '' {gmuds_client_filter}
         GROUP BY assigned_to
         ORDER BY cnt DESC
-    """)
+    """, client_param)
     stats["gmuds_by_person"] = [dict(r) for r in c.fetchall()]
 
-    # CMDB by environment
-    c.execute("""
+    # CMDB by environment (using cmdb_full)
+    c.execute(f"""
         SELECT environment, COUNT(*) as cnt
-        FROM cmdb_databases
+        FROM cmdb_full
         WHERE environment IS NOT NULL AND environment != ''
+        {cmdb_client_filter.replace('WHERE', 'AND')}
         GROUP BY environment
         ORDER BY cnt DESC
-    """)
+    """, client_param)
     stats["cmdb_by_env"] = [dict(r) for r in c.fetchall()]
 
-    # CMDB by status
-    c.execute("""
+    # CMDB by status (using cmdb_full)
+    c.execute(f"""
         SELECT status, COUNT(*) as cnt
-        FROM cmdb_databases
+        FROM cmdb_full
         WHERE status IS NOT NULL AND status != ''
+        {cmdb_client_filter.replace('WHERE', 'AND')}
         GROUP BY status
         ORDER BY cnt DESC
-    """)
+    """, client_param)
     stats["cmdb_by_status"] = [dict(r) for r in c.fetchall()]
 
     # Latest import
@@ -445,7 +457,7 @@ def get_servers(environment=None, psu_version=None, search=None, page=1, per_pag
     return {"servers": servers, "total": total, "page": page, "per_page": per_page, "pages": (total + per_page - 1) // per_page}
 
 
-def get_gmuds(year=None, month=None, status=None, assigned_to=None, search=None, page=1, per_page=50):
+def get_gmuds(client=None, year=None, month=None, status=None, assigned_to=None, search=None, page=1, per_page=50):
     """Get GMUDs with optional filters and pagination."""
     conn = get_connection()
     c = conn.cursor()
@@ -454,6 +466,10 @@ def get_gmuds(year=None, month=None, status=None, assigned_to=None, search=None,
     count_query = "SELECT COUNT(*) FROM gmuds WHERE 1=1"
     params = []
 
+    if client and client != 'none' and client != 'Todos':
+        query += " AND client = ?"
+        count_query += " AND client = ?"
+        params.append(client)
     if year:
         query += " AND year = ?"
         count_query += " AND year = ?"
@@ -802,15 +818,15 @@ def get_user_by_username(username):
     return dict(row) if row else None
 
 
-def create_user(username, password, display_name=None, role='viewer'):
+def create_user(username, password, display_name=None, role='viewer', client_restriction='none'):
     """Create a new user with hashed password."""
     conn = get_connection()
     c = conn.cursor()
     pw_hash = generate_password_hash(password)
     c.execute("""
-        INSERT INTO users (username, password_hash, display_name, role)
-        VALUES (?, ?, ?, ?)
-    """, (username, pw_hash, display_name or username, role))
+        INSERT INTO users (username, password_hash, display_name, role, client_restriction)
+        VALUES (?, ?, ?, ?, ?)
+    """, (username, pw_hash, display_name or username, role, client_restriction))
     conn.commit()
     user_id = c.lastrowid
     conn.close()
@@ -825,6 +841,35 @@ def verify_user(username, password):
     return None
 
 
+def get_all_users():
+    """Get all users."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT id, username, display_name, role, client_restriction, is_active, created_at FROM users ORDER BY id")
+    users = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return users
+
+
+def update_user_status(user_id, is_active):
+    """Enable or disable a user."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET is_active = ? WHERE id = ?", (1 if is_active else 0, user_id))
+    conn.commit()
+    conn.close()
+
+
+def reset_user_password(user_id, new_password):
+    """Reset a user's password."""
+    conn = get_connection()
+    c = conn.cursor()
+    pw_hash = generate_password_hash(new_password)
+    c.execute("UPDATE users SET password_hash = ? WHERE id = ?", (pw_hash, user_id))
+    conn.commit()
+    conn.close()
+
+
 def ensure_admin_exists():
     """Create default admin user if no users exist."""
     conn = get_connection()
@@ -833,7 +878,7 @@ def ensure_admin_exists():
     count = c.fetchone()[0]
     conn.close()
     if count == 0:
-        create_user('admin', 'oraex2025', 'Administrador', 'admin')
+        create_user('admin', 'oraex2025', 'Administrador', 'admin', 'none')
         print("  Default admin user created (admin / oraex2025)")
 
 
