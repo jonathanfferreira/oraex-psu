@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ORAEX PSU Manager{% block title_suffix %}{% endblock %}</title>
     <meta name="description" content="ORAEX PSU Manager — Gestão de PSU Oracle para Getnet/PagoNxt">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo-oraex-azul.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/marca-oraex-azul.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
@@ -20,13 +20,12 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <div class="logo-icon">
-                    <img src="{{ url_for('static', filename='img/logo-oraex-azul.png') }}" alt="ORAEX"
-                        style="width: 28px; height: 28px; object-fit: contain; border-radius: 6px;">
+                <div class="logo-icon" style="width: auto; display: flex; align-items: center;">
+                    <img src="{{ url_for('static', filename='img/marca-oraex-branca.png') }}" alt="ORAEX"
+                        style="height: 32px; width: auto; object-fit: contain;">
                 </div>
-                <div class="logo-text">
-                    <span class="logo-name">ORAEX</span>
-                    <span class="logo-sub">PSU Manager</span>
+                <div class="logo-text" style="margin-left: 8px;">
+                    <span class="logo-sub font-heading" style="color: var(--oraex-cyan); font-weight: 600; font-size: 0.9rem; letter-spacing: 0.5px;">PSU Manager</span>
                 </div>
             </div>
             <button class="toggle-btn" id="sidebarToggle" onclick="toggleSidebar()" title="Recolher menu">
@@ -107,7 +106,7 @@
     <main class="main-content">
         <header class="page-header">
             <div class="header-left">
-                <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                <h1 class="page-title font-heading">{% block page_title %}Dashboard{% endblock %}</h1>
                 <p class="page-subtitle">{% block page_subtitle %}Visão geral do ambiente Oracle{% endblock %}</p>
             </div>
             <div class="header-right">

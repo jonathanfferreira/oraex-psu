@@ -8,7 +8,7 @@
     <div class="header-actions"
         style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end;">
         <div>
-            <h1
+            <h1 class="font-heading"
                 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin: 0; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                 Security.HUD
             </h1>
@@ -17,9 +17,9 @@
         </div>
         <div>
             <span
-                style="display: inline-block; background: rgba(0, 136, 238, 0.1); color: var(--brand-cyan); border: 1px solid var(--accent-glow); padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; box-shadow: var(--shadow-glow);">
+                style="display: inline-block; background: rgba(0, 147, 245, 0.1); color: var(--oraex-cyan); border: 1px solid var(--accent-glow); padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; box-shadow: var(--shadow-glow);">
                 <span
-                    style="display:inline-block; width:8px; height:8px; background:var(--brand-cyan); border-radius:50%; margin-right:6px; animation: pulse 2s infinite;"></span>
+                    style="display:inline-block; width:8px; height:8px; background:var(--oraex-cyan); border-radius:50%; margin-right:6px; animation: pulse 2s infinite;"></span>
                 System: Active
             </span>
         </div>
@@ -29,8 +29,8 @@
     <div class="kpi-grid" style="margin-bottom: 24px;">
 
         <!-- MASSIVE FOCUS METRIC -->
-        <div class="kpi-card accent-5" style="grid-column: span 2;">
-            <div class="kpi-icon red">
+        <div class="kpi-card accent-3" style="grid-column: span 2;">
+            <div class="kpi-icon orange">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                     <line x1="12" y1="9" x2="12" y2="13" />
@@ -39,8 +39,8 @@
             </div>
             <div class="kpi-label" style="text-transform: uppercase; letter-spacing: 1px;">Critical / High Exposures
             </div>
-            <div class="kpi-value" id="stat-critical" style="color: var(--danger); font-size: 3rem;">—</div>
-            <div class="kpi-detail" style="color: var(--danger);">Action Required Immediately</div>
+            <div class="kpi-value" id="stat-critical" style="color: var(--warning); font-size: 3rem;">—</div>
+            <div class="kpi-detail" style="color: var(--warning);">Action Required Immediately</div>
         </div>
 
         <!-- Secondary Metrics -->
@@ -96,7 +96,7 @@
         <div class="chart-card">
             <div class="chart-header">
                 <div>
-                    <div class="chart-title" style="color: var(--danger);">[!] Priority Targets</div>
+                    <div class="chart-title" style="color: var(--warning);">[!] Priority Targets</div>
                     <div class="chart-subtitle">Direct endpoints requiring action</div>
                 </div>
             </div>
@@ -189,7 +189,7 @@
         <div
             style="padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.85rem;">
             <span id="showingText"
-                style="background: rgba(0, 136, 238, 0.1); color: var(--brand-cyan); padding: 4px 12px; border-radius: 12px; border: 1px solid rgba(0, 136, 238, 0.2);">Rows:
+                style="background: rgba(0, 147, 245, 0.1); color: var(--oraex-cyan); padding: 4px 12px; border-radius: 12px; border: 1px solid rgba(0, 147, 245, 0.2);">Rows:
                 0</span>
             <span>LIMIT 500 ROWS MAX</span>
         </div>
