@@ -695,17 +695,6 @@ def api_reset_password(user_id):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@app.route("/api/gmud/<int:gmud_id>", methods=["DELETE"])
-@login_required
-def api_delete_gmud(gmud_id):
-    try:
-        success = delete_gmud(gmud_id)
-        if success:
-            return jsonify({"message": "GMUD excluída com sucesso!"})
-        return jsonify({"message": "GMUD não encontrada"}), 404
-    except Exception as e:
-        return jsonify({"message": str(e)}), 500
-
 
 @app.route("/api/hostnames")
 @login_required
