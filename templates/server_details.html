@@ -95,41 +95,66 @@
 
     <!-- GMUD Timeline -->
     <div class="mt-8">
-        <h3 class="mb-4 text-xl font-bold flex items-center gap-2">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-            </svg>
-            Histórico de GMUDs
-        </h3>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <h3 style="font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px;margin:0">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--oraex-cyan)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Histórico de GMUDs
+            </h3>
+            {% if gmuds %}
+            <span style="background:rgba(109,245,227,0.1);border:1px solid rgba(109,245,227,0.25);color:var(--oraex-cyan);font-size:0.75rem;font-weight:700;padding:4px 12px;border-radius:20px">
+                {{ gmuds|length }} registradas
+            </span>
+            {% endif %}
+        </div>
 
         {% if gmuds %}
-        <div class="timeline">
+        <div class="timeline-v2">
             {% for gmud in gmuds %}
-            <div class="timeline-item">
-                <div class="timeline-date">
-                    <div class="font-bold text-lg">{{ gmud.start_date.split(' ')[0] if gmud.start_date else 'Data N/A'
-                        }}</div>
-                    <div class="text-sm text-muted">{{ gmud.change_number }}</div>
-                </div>
-                <div class="timeline-content card">
-                    <div class="flex justify-between items-start mb-2">
-                        <h4 class="font-bold text-lg">{{ gmud.title }}</h4>
-                        <span class="status-badge status-{{ 'ok' if 'Sucesso' in gmud.status else 'warning' }}">{{
-                            gmud.status }}</span>
+            {% set status_upper = (gmud.status or '')|upper %}
+            {% if 'ENCERR' in status_upper %}
+                {% set node_color = '#10b981' %}
+            {% elif 'CANCEL' in status_upper %}
+                {% set node_color = '#64748b' %}
+            {% elif 'REPLANE' in status_upper %}
+                {% set node_color = '#ef4444' %}
+            {% elif 'ANDAMENTO' in status_upper or 'IMPLEMENT' in status_upper %}
+                {% set node_color = '#f59e0b' %}
+            {% else %}
+                {% set node_color = '#6366f1' %}
+            {% endif %}
+            <div class="timeline-v2-item">
+                <div class="timeline-v2-node" style="background:{{ node_color }};box-shadow:0 0 10px {{ node_color }}55"></div>
+                <div class="timeline-v2-card">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:12px">
+                        <div>
+                            <div style="font-family:monospace;font-weight:700;color:var(--accent-primary);font-size:0.85rem">{{ gmud.change_number or '—' }}</div>
+                            <div style="font-size:0.88rem;font-weight:600;line-height:1.4;margin-top:2px">{{ gmud.title or '—' }}</div>
+                        </div>
+                        <span class="status-badge {{ gmud.status|lower|replace(' ','_') if gmud.status else '' }}" style="white-space:nowrap;flex-shrink:0">{{ gmud.status or '—' }}</span>
                     </div>
-                    <p class="text-muted text-sm mb-2">{{ gmud.observation or 'Sem observações.' }}</p>
-                    <div class="text-xs text-muted flex gap-4">
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:0.75rem;color:var(--text-muted);margin-bottom:6px">
+                        <span>📅 {{ (gmud.start_date or '')[:10] or 'N/A' }} → {{ (gmud.end_date or '')[:10] or 'N/A' }}</span>
                         <span>👤 {{ gmud.assigned_to or 'N/A' }}</span>
-                        <span>📅 {{ gmud.start_date }} - {{ gmud.end_date }}</span>
+                        {% if gmud.environment %}<span style="background:rgba(255,255,255,0.06);padding:1px 7px;border-radius:10px">{{ gmud.environment }}</span>{% endif %}
+                        {% if gmud.db_type %}<span style="background:rgba(255,255,255,0.06);padding:1px 7px;border-radius:10px">{{ gmud.db_type }}</span>{% endif %}
                     </div>
+                    {% if gmud.observation %}
+                    <div style="font-size:0.75rem;color:var(--text-muted);background:rgba(0,0,0,0.15);padding:6px 10px;border-radius:6px;border-left:2px solid rgba(255,255,255,0.08)">{{ gmud.observation }}</div>
+                    {% endif %}
+                    {% if gmud.vulnerability_before or gmud.vulnerability_after %}
+                    <div style="display:flex;gap:8px;margin-top:6px;font-size:0.72rem">
+                        {% if gmud.vulnerability_before %}<span style="background:rgba(239,68,68,0.1);color:#ef4444;padding:2px 8px;border-radius:10px">Antes: {{ gmud.vulnerability_before }}</span>{% endif %}
+                        {% if gmud.vulnerability_after %}<span style="background:rgba(16,185,129,0.1);color:#10b981;padding:2px 8px;border-radius:10px">Depois: {{ gmud.vulnerability_after }}</span>{% endif %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <div class="card p-8 text-center text-muted">
-            <p>Nenhuma GMUD encontrada para este servidor.</p>
+        <div class="chart-card" style="padding:40px;text-align:center;color:var(--text-muted)">
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 12px;opacity:0.3"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            <div>Nenhuma GMUD encontrada para este servidor.</div>
         </div>
         {% endif %}
     </div>
@@ -137,8 +162,8 @@
 
 <style>
     .janela-box {
-        background: rgba(var(--accent-rgb), 0.1);
-        border: 1px solid rgba(var(--accent-rgb), 0.2);
+        background: rgba(109,245,227, 0.08);
+        border: 1px solid rgba(109,245,227, 0.2);
         border-radius: 8px;
         padding: 10px;
         text-align: center;
@@ -147,29 +172,42 @@
         align-items: center;
     }
 
-    .timeline {
+    .timeline-v2 {
         position: relative;
-        padding-left: 20px;
-        border-left: 2px solid rgba(255, 255, 255, 0.1);
+        padding-left: 32px;
     }
-
-    .timeline-item {
-        position: relative;
-        margin-bottom: 24px;
-        padding-left: 20px;
-    }
-
-    .timeline-item::before {
+    .timeline-v2::before {
         content: '';
         position: absolute;
-        left: -25px;
-        /* Adjust based on border width */
-        top: 5px;
-        width: 12px;
-        height: 12px;
-        background: var(--accent-color);
+        left: 9px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, rgba(109,245,227,0.3), rgba(255,255,255,0.05));
+    }
+    .timeline-v2-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    .timeline-v2-node {
+        position: absolute;
+        left: -27px;
+        top: 10px;
+        width: 14px;
+        height: 14px;
         border-radius: 50%;
-        border: 2px solid var(--bg-color);
+        border: 2px solid var(--bg-secondary);
+        z-index: 1;
+    }
+    .timeline-v2-card {
+        background: var(--bg-card, rgba(255,255,255,0.04));
+        border: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
+        border-radius: var(--radius-md, 10px);
+        padding: 12px 16px;
+        transition: border-color 0.15s;
+    }
+    .timeline-v2-card:hover {
+        border-color: rgba(255,255,255,0.12);
     }
 </style>
 {% endblock %}

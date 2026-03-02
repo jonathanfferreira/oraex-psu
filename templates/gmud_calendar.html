@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title_suffix %} — Calendário de GMUDs{% endblock %}
+{% block page_title %}Calendário de GMUDs{% endblock %}
+{% block page_subtitle %}Visualização mensal das changes agendadas{% endblock %}
+
+{% block content %}
+
+<div class="table-controls" style="margin-bottom:16px;align-items:center">
+    <button class="btn btn-secondary" onclick="prevMonth()" style="padding:6px 14px">&#8592; Anterior</button>
+    <div style="font-size:1.1rem;font-weight:700;min-width:180px;text-align:center" id="calMonthLabel">—</div>
+    <button class="btn btn-secondary" onclick="nextMonth()" style="padding:6px 14px">Próximo &#8594;</button>
+    <div style="flex:1"></div>
+    <select class="filter-select" id="calClientFilter" onchange="loadCalendar()">
+        <option value="">Todos os Clientes</option>
+        <option value="GetNet">GetNet</option>
+        <option value="PagoNxt">PagoNxt</option>
+    </select>
+</div>
+
+<!-- Legend -->
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;font-size:0.75rem">
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block"></span>Encerrada</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block"></span>Em Andamento / Implementar</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block"></span>Vencida / Replanejada</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#6366f1;display:inline-block"></span>Aberta / Agendada</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#64748b;display:inline-block"></span>Cancelada</span>
+</div>
+
+<!-- Calendar Grid -->
+<div class="chart-card" style="padding:16px">
+    <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+        <!-- Header days -->
+        <div style="text-align:center;font-size:0.72rem;font-weight:700;color:var(--text-muted);padding:6px">Dom</div>
+        <div style="text-align:center;font-size:0.72rem;font-weight:700;color:var(--text-muted);padding:6px">Seg</div>
+        <div style="text-align:center;font-size:0.72rem;font-weight:700;color:var(--text-muted);padding:6px">Ter</div>
+        <div style="text-align:center;font-size:0.72rem;font-weight:700;color:var(--text-muted);padding:6px">Qua</div>
+        <div style="text-align:center;font-size:0.72rem;font-weight:700;color:var(--text-muted);padding:6px">Qui</div>
+        <div style="text-align:center;font-size:0.72rem;font-weight:700;color:var(--text-muted);padding:6px">Sex</div>
+        <div style="text-align:center;font-size:0.72rem;font-weight:700;color:var(--text-muted);padding:6px">Sáb</div>
+    </div>
+    <div id="calLoading" style="text-align:center;padding:60px"><div class="spinner" style="margin:auto"></div></div>
+</div>
+
+<!-- Popover -->
+<div id="calPopover" style="display:none;position:fixed;z-index:1000;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:16px;min-width:300px;max-width:400px;box-shadow:var(--shadow-lg)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-weight:700;font-size:0.9rem" id="popDate"></div>
+        <button onclick="document.getElementById('calPopover').style.display='none'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.2rem">×</button>
+    </div>
+    <div id="popContent"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+let calYear, calMonth;
+(function() {
+    const now = new Date();
+    calYear = now.getFullYear();
+    calMonth = now.getMonth() + 1;
+})();
+
+function prevMonth() {
+    calMonth--;
+    if (calMonth < 1) { calMonth = 12; calYear--; }
+    loadCalendar();
+}
+function nextMonth() {
+    calMonth++;
+    if (calMonth > 12) { calMonth = 1; calYear++; }
+    loadCalendar();
+}
+
+function gmudColor(status) {
+    if (!status) return '#6366f1';
+    const s = status.toUpperCase();
+    if (s.includes('ENCERR')) return '#10b981';
+    if (s.includes('CANCEL')) return '#64748b';
+    if (s.includes('REPLANE') || s.includes('VENC')) return '#ef4444';
+    if (s.includes('ANDAMENTO') || s.includes('IMPLEMENT')) return '#f59e0b';
+    return '#6366f1';
+}
+
+document.addEventListener('DOMContentLoaded', loadCalendar);
+
+async function loadCalendar() {
+    document.getElementById('calLoading').style.display = 'block';
+    const client = document.getElementById('calClientFilter').value;
+    const label = `${MONTHS_PT[calMonth-1]} ${calYear}`;
+    document.getElementById('calMonthLabel').textContent = label;
+
+    const url = `/api/gmuds/calendar?year=${calYear}&month=${calMonth}${client ? '&client='+encodeURIComponent(client) : ''}`;
+    try {
+        const r = await fetch(url);
+        const d = await r.json();
+        renderCalendar(d);
+    } catch (e) {
+        showToast('Erro ao carregar calendário', 'error');
+    } finally {
+        document.getElementById('calLoading').style.display = 'none';
+    }
+}
+
+function renderCalendar(d) {
+    const grid = document.getElementById('calGrid');
+    // Remove day cells but keep headers (first 7 children)
+    while (grid.children.length > 7) grid.removeChild(grid.lastChild);
+
+    const firstDay = new Date(d.year, d.month - 1, 1).getDay(); // 0=Sun
+    const daysInMonth = new Date(d.year, d.month, 0).getDate();
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+    // Empty cells before first day
+    for (let i = 0; i < firstDay; i++) {
+        const cell = document.createElement('div');
+        cell.style.cssText = 'min-height:80px;padding:6px;border-radius:6px;background:rgba(255,255,255,0.02)';
+        grid.appendChild(cell);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${d.year}-${String(d.month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const gmuds = d.days[dateStr] || [];
+        const isToday = dateStr === todayStr;
+
+        const cell = document.createElement('div');
+        cell.style.cssText = `min-height:80px;padding:6px;border-radius:6px;cursor:${gmuds.length?'pointer':'default'};background:${isToday?'rgba(109,245,227,0.06)':'rgba(255,255,255,0.03)'};border:1px solid ${isToday?'rgba(109,245,227,0.3)':'transparent'};transition:background 0.15s`;
+        cell.onmouseenter = function() { if(gmuds.length) this.style.background='rgba(255,255,255,0.07)'; };
+        cell.onmouseleave = function() { this.style.background = isToday?'rgba(109,245,227,0.06)':'rgba(255,255,255,0.03)'; };
+
+        const dayNum = document.createElement('div');
+        dayNum.style.cssText = `font-size:0.78rem;font-weight:${isToday?'800':'600'};color:${isToday?'var(--oraex-cyan)':'var(--text-secondary)'};margin-bottom:4px`;
+        dayNum.textContent = day;
+        cell.appendChild(dayNum);
+
+        gmuds.slice(0, 3).forEach(g => {
+            const chip = document.createElement('div');
+            const color = gmudColor(g.status);
+            chip.style.cssText = `background:${color}22;border-left:3px solid ${color};border-radius:3px;padding:2px 5px;margin-bottom:2px;font-size:0.65rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer`;
+            chip.textContent = g.change_number || g.title?.slice(0,15) || 'GMUD';
+            chip.title = g.title || '';
+            cell.appendChild(chip);
+        });
+        if (gmuds.length > 3) {
+            const more = document.createElement('div');
+            more.style.cssText = 'font-size:0.62rem;color:var(--text-muted);padding-left:2px';
+            more.textContent = `+${gmuds.length - 3} mais`;
+            cell.appendChild(more);
+        }
+
+        if (gmuds.length > 0) {
+            cell.onclick = (e) => showPopover(e, dateStr, gmuds);
+        }
+        grid.appendChild(cell);
+    }
+}
+
+function showPopover(e, dateStr, gmuds) {
+    const pop = document.getElementById('calPopover');
+    document.getElementById('popDate').textContent = formatDate(dateStr + 'T00:00:00');
+    document.getElementById('popContent').innerHTML = gmuds.map(g => {
+        const color = gmudColor(g.status);
+        return `<div style="padding:8px;margin-bottom:6px;border-radius:6px;background:rgba(255,255,255,0.04);border-left:3px solid ${color}">
+            <div style="font-size:0.78rem;font-weight:700;font-family:monospace;color:var(--accent-primary)">${g.change_number||'—'}</div>
+            <div style="font-size:0.75rem;margin:3px 0;line-height:1.4">${g.title||'—'}</div>
+            <div style="display:flex;gap:8px;font-size:0.68rem;color:var(--text-muted)">
+                <span>${getStatusBadge(g.status)}</span>
+                <span>${g.assigned_to||'—'}</span>
+                <span>${g.environment||'—'}</span>
+            </div>
+        </div>`;
+    }).join('');
+    // Position near click
+    const x = Math.min(e.clientX + 10, window.innerWidth - 420);
+    const y = Math.min(e.clientY + 10, window.innerHeight - 300);
+    pop.style.left = x + 'px';
+    pop.style.top = y + 'px';
+    pop.style.display = 'block';
+    e.stopPropagation();
+}
+
+document.addEventListener('click', () => {
+    document.getElementById('calPopover').style.display = 'none';
+});
+</script>
+{% endblock %}

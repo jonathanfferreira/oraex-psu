@@ -9,6 +9,19 @@
 
 {% block content %}
 
+<div id="overdueAlert" style="display:none;margin-bottom:16px;animation-delay:0.05s" class="chart-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:var(--radius-md)">
+        <div style="display:flex;align-items:center;gap:12px">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ef4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div>
+                <div style="color:#ef4444;font-weight:700;font-size:0.95rem"><span id="overdueCount">0</span> GMUDs com prazo vencido</div>
+                <div style="color:var(--text-muted);font-size:0.78rem" id="overdueNames"></div>
+            </div>
+        </div>
+        <a href="/gmud" style="color:#ef4444;font-size:0.8rem;font-weight:600;text-decoration:none;border:1px solid rgba(239,68,68,0.4);padding:4px 12px;border-radius:20px">Ver GMUDs</a>
+    </div>
+</div>
+
 <div class="kpi-grid" id="kpiGrid">
     <div class="kpi-card accent-1">
         <div class="kpi-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M2 8h20"/></svg></div>
@@ -88,6 +101,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
     applyChartDefaults();
+    loadOverdueAlert();
     try {
         const data = await API.dashboard();
         renderKPIs(data);
@@ -102,6 +116,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('Erro ao carregar dashboard: ' + e.message, 'error');
     }
 });
+
+async function loadOverdueAlert() {
+    try {
+        const r = await fetch('/api/gmuds/overdue');
+        const d = await r.json();
+        if (d.count > 0) {
+            document.getElementById('overdueCount').textContent = d.count;
+            const names = d.gmuds.slice(0, 3).map(g => `${g.change_number || g.title?.slice(0,30)} (${g.days_overdue}d)`).join(' · ');
+            document.getElementById('overdueNames').textContent = names + (d.count > 3 ? ` e mais ${d.count - 3}...` : '');
+            document.getElementById('overdueAlert').style.display = 'block';
+        }
+    } catch (e) { /* silencioso */ }
+}
 
 function renderKPIs(data) {
     animateValue(document.getElementById('kpiServers'), 0, data.total_servers);

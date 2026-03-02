@@ -278,6 +278,27 @@ def init_db():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_qualys_det_asset ON qualys_detections(asset_name)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_qualys_det_source ON qualys_detections(source)")
 
+    # Migrations: add columns that may be missing from older databases
+    migrations = [
+        "ALTER TABLE gmuds ADD COLUMN needs_replan TEXT",
+        "ALTER TABLE gmuds ADD COLUMN new_start_date TEXT",
+        "ALTER TABLE gmuds ADD COLUMN new_end_date TEXT",
+        "ALTER TABLE gmuds ADD COLUMN new_gmud TEXT",
+        "ALTER TABLE gmuds ADD COLUMN vulnerability TEXT",
+        "ALTER TABLE gmuds ADD COLUMN opened_by TEXT",
+        "ALTER TABLE gmuds ADD COLUMN vulnerability_before TEXT",
+        "ALTER TABLE gmuds ADD COLUMN vulnerability_after TEXT",
+        "ALTER TABLE gmuds ADD COLUMN closing_code TEXT",
+        "ALTER TABLE gmuds ADD COLUMN updated_at TIMESTAMP",
+        "ALTER TABLE users ADD COLUMN client_restriction TEXT DEFAULT 'none'",
+        "ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1",
+    ]
+    for migration in migrations:
+        try:
+            cursor.execute(migration)
+        except Exception:
+            pass  # Column already exists
+
     conn.commit()
     conn.close()
     print("[OK] Database initialized successfully!")
@@ -1039,4 +1060,172 @@ def get_server_details(hostname):
     return {
         "server": server_details,
         "gmuds": gmuds
+    }
+
+
+# ══════════════════════════════════════════════════════════
+#  MANAGEMENT FEATURES
+# ══════════════════════════════════════════════════════════
+
+def get_overdue_gmuds(client=None):
+    """Return GMUDs whose end_date has passed but are not closed/cancelled."""
+    conn = get_connection()
+    c = conn.cursor()
+    query = """
+        SELECT id, change_number, title, status, end_date, client,
+               assigned_to, environment, db_type,
+               CAST(julianday('now') - julianday(end_date) AS INTEGER) AS days_overdue
+        FROM gmuds
+        WHERE end_date IS NOT NULL AND end_date != ''
+          AND end_date < date('now')
+          AND upper(status) NOT IN ('ENCERRADA', 'CANCELADA', 'ENCERRADO', 'CANCELADO')
+    """
+    params = []
+    if client and client != 'Todos':
+        query += " AND client = ?"
+        params.append(client)
+    query += " ORDER BY end_date ASC"
+    c.execute(query, params)
+    rows = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return {"count": len(rows), "gmuds": rows}
+
+
+def get_gmuds_calendar(year, month, client=None):
+    """Return GMUDs for a given year/month grouped by start_date (YYYY-MM-DD)."""
+    conn = get_connection()
+    c = conn.cursor()
+    query = """
+        SELECT id, change_number, title, status, environment, db_type,
+               client, assigned_to, start_date, end_date, observation
+        FROM gmuds
+        WHERE year = ? AND month = ?
+    """
+    params = [year, month]
+    if client and client != 'Todos':
+        query += " AND client = ?"
+        params.append(client)
+    query += " ORDER BY start_date ASC"
+    c.execute(query, params)
+    rows = [dict(r) for r in c.fetchall()]
+    conn.close()
+
+    # Group by date (YYYY-MM-DD part of start_date)
+    from collections import defaultdict
+    days = defaultdict(list)
+    for g in rows:
+        date_key = (g.get('start_date') or '')[:10]
+        if date_key:
+            days[date_key].append(g)
+    return {"year": year, "month": month, "total": len(rows), "days": dict(days)}
+
+
+def get_sla_metrics(client=None):
+    """Calculate SLA and management metrics for GMUDs."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    where = "WHERE 1=1"
+    params = []
+    if client and client != 'Todos':
+        where += " AND client = ?"
+        params.append(client)
+
+    # Overall counts
+    c.execute(f"SELECT COUNT(*) FROM gmuds {where}", params)
+    total = c.fetchone()[0] or 0
+
+    c.execute(f"SELECT COUNT(*) FROM gmuds {where} AND upper(status) IN ('ENCERRADA','ENCERRADO')", params)
+    closed = c.fetchone()[0] or 0
+
+    c.execute(f"SELECT COUNT(*) FROM gmuds {where} AND upper(status) IN ('CANCELADA','CANCELADO')", params)
+    cancelled = c.fetchone()[0] or 0
+
+    c.execute(f"SELECT COUNT(*) FROM gmuds {where} AND upper(needs_replan) = 'Y'", params)
+    replanned = c.fetchone()[0] or 0
+
+    # On-time: closed GMUDs where end_date was not overdue
+    c.execute(f"""
+        SELECT COUNT(*) FROM gmuds
+        {where}
+        AND upper(status) IN ('ENCERRADA','ENCERRADO')
+        AND end_date IS NOT NULL AND end_date != ''
+        AND start_date IS NOT NULL AND start_date != ''
+        AND end_date >= start_date
+    """, params)
+    on_time = c.fetchone()[0] or 0
+
+    # Average duration (days)
+    c.execute(f"""
+        SELECT AVG(julianday(end_date) - julianday(start_date))
+        FROM gmuds {where}
+        AND end_date IS NOT NULL AND end_date != ''
+        AND start_date IS NOT NULL AND start_date != ''
+        AND julianday(end_date) > julianday(start_date)
+    """, params)
+    avg_row = c.fetchone()
+    avg_duration = round(avg_row[0], 1) if avg_row and avg_row[0] else 0
+
+    # By month (last 6 months relative to current data)
+    c.execute(f"""
+        SELECT year, month,
+               COUNT(*) AS total,
+               SUM(CASE WHEN upper(status) IN ('ENCERRADA','ENCERRADO') THEN 1 ELSE 0 END) AS closed
+        FROM gmuds {where}
+        GROUP BY year, month
+        ORDER BY year DESC, month DESC
+        LIMIT 6
+    """, params)
+    by_month_raw = [dict(r) for r in c.fetchall()]
+    by_month = list(reversed(by_month_raw))
+
+    # By client breakdown
+    c.execute(f"""
+        SELECT client,
+               COUNT(*) AS total,
+               SUM(CASE WHEN upper(status) IN ('ENCERRADA','ENCERRADO') THEN 1 ELSE 0 END) AS closed
+        FROM gmuds {where}
+        GROUP BY client ORDER BY total DESC
+    """, params)
+    by_client = [dict(r) for r in c.fetchall()]
+
+    # Top 5 people by total GMUDs
+    c.execute(f"""
+        SELECT assigned_to,
+               COUNT(*) AS total,
+               SUM(CASE WHEN upper(status) IN ('ENCERRADA','ENCERRADO') THEN 1 ELSE 0 END) AS closed
+        FROM gmuds {where}
+        AND assigned_to IS NOT NULL AND assigned_to != ''
+        GROUP BY assigned_to ORDER BY total DESC LIMIT 5
+    """, params)
+    by_person = [dict(r) for r in c.fetchall()]
+
+    # By environment
+    c.execute(f"""
+        SELECT environment, COUNT(*) AS total
+        FROM gmuds {where}
+        AND environment IS NOT NULL AND environment != ''
+        GROUP BY environment ORDER BY total DESC
+    """, params)
+    by_env = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+
+    success_rate = round(closed / total * 100, 1) if total > 0 else 0
+    replan_rate = round(replanned / total * 100, 1) if total > 0 else 0
+    on_time_rate = round(on_time / closed * 100, 1) if closed > 0 else 0
+
+    return {
+        "total": total,
+        "closed": closed,
+        "cancelled": cancelled,
+        "replanned": replanned,
+        "success_rate": success_rate,
+        "replan_rate": replan_rate,
+        "on_time_rate": on_time_rate,
+        "avg_duration_days": avg_duration,
+        "by_month": by_month,
+        "by_client": by_client,
+        "by_person": by_person,
+        "by_env": by_env,
     }
