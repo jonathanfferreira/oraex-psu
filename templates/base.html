@@ -100,6 +100,15 @@
             </button>
             <div class="import-status" id="importStatus"></div>
             {% if current_user.is_authenticated %}
+            {% set squad_colors = {'dba': '#6df5e3', 'patch': '#f59e0b', 'middleware': '#8b5cf6', 'cloud': '#3b82f6'} %}
+            {% set squad_names = {'dba': 'DBA', 'patch': 'Patch Mgr', 'middleware': 'Middleware', 'cloud': 'Cloud'} %}
+            {% set user_squad = current_user.squad if current_user.squad else 'dba' %}
+            {% set sq_color = squad_colors.get(user_squad, '#6366f1') %}
+            <div style="padding:6px 12px;margin-bottom:2px">
+                <span style="background:{{ sq_color }}22;color:{{ sq_color }};border:1px solid {{ sq_color }}44;padding:3px 10px;border-radius:10px;font-size:0.72rem;font-weight:700;display:inline-block">
+                    {{ squad_names.get(user_squad, user_squad)|upper }}
+                </span>
+            </div>
             <div class="nav-item" style="cursor:default;opacity:0.6;padding:7px 12px" title="{{ current_user.display_name }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>

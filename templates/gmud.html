@@ -90,6 +90,13 @@
             </select>
             <select class="filter-select" id="gmudStatusFilter" onchange="loadGmuds()"><option value="">Status</option></select>
             <select class="filter-select" id="gmudAssigneeFilter" onchange="loadGmuds()"><option value="">Recurso</option></select>
+            <select class="filter-select" id="gmudSquadFilter" onchange="loadGmuds()">
+                <option value="all">Todos Squads</option>
+                <option value="dba">DBA</option>
+                <option value="patch">Patch Manager</option>
+                <option value="middleware">Middleware</option>
+                <option value="cloud">Cloud</option>
+            </select>
         </div>
     </div>
     <div class="table-scroll">
@@ -142,12 +149,14 @@ async function loadGmuds(page) {
     const body = document.getElementById('gmudBody');
     body.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr>';
     try {
+        const squadVal = document.getElementById('gmudSquadFilter').value;
         const data = await API.gmuds({
             year: document.getElementById('gmudYearFilter').value,
             month: document.getElementById('gmudMonthFilter').value,
             status: document.getElementById('gmudStatusFilter').value,
             assigned_to: document.getElementById('gmudAssigneeFilter').value,
             search: document.getElementById('gmudSearch').value,
+            squad: squadVal !== 'all' ? squadVal : '',
             page: currentGmudPage, per_page: 50
         });
         document.getElementById('gmudCount').textContent = data.total.toLocaleString('pt-BR');

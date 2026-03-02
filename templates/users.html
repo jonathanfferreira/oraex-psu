@@ -25,7 +25,8 @@
                     <th>Nome</th>
                     <th>Usuário</th>
                     <th>Perfil (Role)</th>
-                    <th>Cliente (Restrição)</th>
+                    <th>Cliente</th>
+                    <th>Squad</th>
                     <th>Status</th>
                     <th style="text-align: right;">Ações</th>
                 </tr>
@@ -63,7 +64,7 @@
                 <input type="password" id="uPass" required minlength="6"
                     style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
             </div>
-            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
                 <div style="flex: 1;">
                     <label
                         style="color: var(--text-secondary); font-size: 0.875rem; display: block; margin-bottom: 0.5rem;">Perfil
@@ -86,6 +87,18 @@
                         <option value="PagoNxt" style="background:#05050A">Somente PagoNxt</option>
                     </select>
                 </div>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label
+                    style="color: var(--text-secondary); font-size: 0.875rem; display: block; margin-bottom: 0.5rem;">Squad
+                    (Equipe)</label>
+                <select id="uSquad"
+                    style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
+                    <option value="dba" style="background:#05050A">DBA / Banco de Dados</option>
+                    <option value="patch" style="background:#05050A">Patch Manager</option>
+                    <option value="middleware" style="background:#05050A">Middleware / DevOps</option>
+                    <option value="cloud" style="background:#05050A">Cloud</option>
+                </select>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 1rem;">
@@ -119,12 +132,16 @@
 
                 const toggleTxt = u.is_active ? 'Desativar' : 'Ativar';
 
+                const squadColors = {dba:'#6df5e3',patch:'#f59e0b',middleware:'#8b5cf6',cloud:'#3b82f6'};
+                const squadColor = squadColors[u.squad] || '#6366f1';
+                const squadBadge = `<span style="background:${squadColor}22;color:${squadColor};border:1px solid ${squadColor}44;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:600">${u.squad||'dba'}</span>`;
                 tr.innerHTML = `
                     <td>#${u.id}</td>
                     <td style="font-weight:bold; color:white;">${u.display_name}</td>
                     <td style="color:var(--text-secondary)">${u.username}</td>
                     <td style="text-transform: capitalize;">${roleBadge}</td>
                     <td>${clientBadge}</td>
+                    <td>${squadBadge}</td>
                     <td>${statusBadge}</td>
                     <td style="text-align: right; font-size: 0.8rem;">
                         <button onclick="toggleStatus(${u.id}, ${!u.is_active})" style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding:4px 8px; border-radius:4px; margin-right:5px; cursor:pointer">${toggleTxt}</button>
@@ -154,7 +171,8 @@
             username: document.getElementById('uLogin').value,
             password: document.getElementById('uPass').value,
             role: document.getElementById('uRole').value,
-            client_restriction: document.getElementById('uClient').value
+            client_restriction: document.getElementById('uClient').value,
+            squad: document.getElementById('uSquad').value
         };
 
         try {

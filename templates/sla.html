@@ -89,11 +89,35 @@
     </div>
 </div>
 
+<!-- Charts row 3: By Squad -->
+<div class="charts-grid" style="margin-top:16px">
+    <div class="chart-card" style="animation-delay:0.4s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">Por Squad</div>
+                <div class="chart-subtitle">Distribuição de GMUDs por equipe</div>
+            </div>
+        </div>
+        <div class="chart-body"><canvas id="chartSquad"></canvas></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.45s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">Taxa de Sucesso por Squad</div>
+                <div class="chart-subtitle">Encerradas / Total por equipe</div>
+            </div>
+        </div>
+        <div class="chart-body"><canvas id="chartSquadSuccess"></canvas></div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-let trendChart, clientChart, personChart, envChart;
+let trendChart, clientChart, personChart, envChart, squadChart, squadSuccessChart;
+const SQUAD_COLORS = { dba: '#6df5e3', patch: '#f59e0b', middleware: '#8b5cf6', cloud: '#3b82f6' };
+const SQUAD_LABELS = { dba: 'DBA', patch: 'Patch Manager', middleware: 'Middleware', cloud: 'Cloud' };
 
 document.addEventListener('DOMContentLoaded', () => {
     applyChartDefaults();
@@ -111,6 +135,7 @@ async function loadSLA() {
         renderClientChart(d);
         renderPersonChart(d);
         renderEnvChart(d);
+        renderSquadCharts(d);
     } catch (e) {
         showToast('Erro ao carregar métricas: ' + e.message, 'error');
     }
@@ -184,6 +209,45 @@ function renderEnvChart(d) {
             datasets: [{ data: d.by_env.map(e => e.total), backgroundColor: CHART_COLORS.paletteBg.slice(0, d.by_env.length) }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+}
+
+function renderSquadCharts(d) {
+    if (!d.by_squad || !d.by_squad.length) return;
+    const squads = d.by_squad;
+    const labels = squads.map(s => SQUAD_LABELS[s.squad] || s.squad);
+    const colors = squads.map(s => SQUAD_COLORS[s.squad] || '#6366f1');
+    const colorsBg = colors.map(c => c + '33');
+
+    if (squadChart) squadChart.destroy();
+    squadChart = new Chart(document.getElementById('chartSquad'), {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{ data: squads.map(s => s.total), backgroundColor: colors }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { position: 'bottom' } } }
+    });
+
+    const successRates = squads.map(s => s.total > 0 ? Math.round(s.closed / s.total * 100) : 0);
+    if (squadSuccessChart) squadSuccessChart.destroy();
+    squadSuccessChart = new Chart(document.getElementById('chartSquadSuccess'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Taxa de Sucesso (%)',
+                data: successRates,
+                backgroundColor: colorsBg,
+                borderColor: colors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }
+        }
     });
 }
 </script>

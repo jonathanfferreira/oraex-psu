@@ -255,10 +255,36 @@ def init_db():
             display_name TEXT,
             role TEXT DEFAULT 'viewer',
             client_restriction TEXT DEFAULT 'none',
+            squad TEXT DEFAULT 'dba',
             is_active INTEGER DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # ── Squads ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS squads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            slug TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            color TEXT DEFAULT '#6366f1',
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    # Insert default squads (ignore if already exists)
+    default_squads = [
+        ('dba', 'DBA / Banco de Dados', 'Oracle, SQL Server, MySQL, PostgreSQL', '#6df5e3'),
+        ('patch', 'Patch Manager', 'OS patches, Windows/Linux KB updates', '#f59e0b'),
+        ('middleware', 'Middleware / DevOps', 'WebLogic, Tomcat, Apache, JBoss', '#8b5cf6'),
+        ('cloud', 'Cloud', 'AWS, Azure, GCP infrastructure', '#3b82f6'),
+    ]
+    for slug, name, desc, color in default_squads:
+        cursor.execute(
+            "INSERT OR IGNORE INTO squads (slug, name, description, color) VALUES (?, ?, ?, ?)",
+            (slug, name, desc, color)
+        )
     cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)")
 
     # ── Indexes for common queries ──
@@ -290,8 +316,10 @@ def init_db():
         "ALTER TABLE gmuds ADD COLUMN vulnerability_after TEXT",
         "ALTER TABLE gmuds ADD COLUMN closing_code TEXT",
         "ALTER TABLE gmuds ADD COLUMN updated_at TIMESTAMP",
+        "ALTER TABLE gmuds ADD COLUMN squad TEXT DEFAULT 'dba'",
         "ALTER TABLE users ADD COLUMN client_restriction TEXT DEFAULT 'none'",
         "ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1",
+        "ALTER TABLE users ADD COLUMN squad TEXT DEFAULT 'dba'",
     ]
     for migration in migrations:
         try:
@@ -478,7 +506,7 @@ def get_servers(environment=None, psu_version=None, search=None, page=1, per_pag
     return {"servers": servers, "total": total, "page": page, "per_page": per_page, "pages": (total + per_page - 1) // per_page}
 
 
-def get_gmuds(client=None, year=None, month=None, status=None, assigned_to=None, search=None, page=1, per_page=50):
+def get_gmuds(client=None, year=None, month=None, status=None, assigned_to=None, search=None, squad=None, page=1, per_page=50):
     """Get GMUDs with optional filters and pagination."""
     conn = get_connection()
     c = conn.cursor()
@@ -491,6 +519,10 @@ def get_gmuds(client=None, year=None, month=None, status=None, assigned_to=None,
         query += " AND client = ?"
         count_query += " AND client = ?"
         params.append(client)
+    if squad and squad != 'all':
+        query += " AND squad = ?"
+        count_query += " AND squad = ?"
+        params.append(squad)
     if year:
         query += " AND year = ?"
         count_query += " AND year = ?"
@@ -839,19 +871,29 @@ def get_user_by_username(username):
     return dict(row) if row else None
 
 
-def create_user(username, password, display_name=None, role='viewer', client_restriction='none'):
+def create_user(username, password, display_name=None, role='viewer', client_restriction='none', squad='dba'):
     """Create a new user with hashed password."""
     conn = get_connection()
     c = conn.cursor()
     pw_hash = generate_password_hash(password)
     c.execute("""
-        INSERT INTO users (username, password_hash, display_name, role, client_restriction)
-        VALUES (?, ?, ?, ?, ?)
-    """, (username, pw_hash, display_name or username, role, client_restriction))
+        INSERT INTO users (username, password_hash, display_name, role, client_restriction, squad)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (username, pw_hash, display_name or username, role, client_restriction, squad))
     conn.commit()
     user_id = c.lastrowid
     conn.close()
     return user_id
+
+
+def get_all_squads():
+    """Get all active squads."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM squads WHERE is_active = 1 ORDER BY id")
+    squads = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return squads
 
 
 def verify_user(username, password):
@@ -866,7 +908,7 @@ def get_all_users():
     """Get all users."""
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT id, username, display_name, role, client_restriction, is_active, created_at FROM users ORDER BY id")
+    c.execute("SELECT id, username, display_name, role, client_restriction, squad, is_active, created_at FROM users ORDER BY id")
     users = [dict(r) for r in c.fetchall()]
     conn.close()
     return users
@@ -921,13 +963,15 @@ def update_gmud(gmud_id, data):
         UPDATE gmuds SET
             client=?, db_type=?, environment=?, status=?,
             start_date=?, end_date=?, change_number=?, title=?,
-            assigned_to=?, observation=?, vulnerability=?, opened_by=?
+            assigned_to=?, observation=?, vulnerability=?, opened_by=?,
+            squad=?
         WHERE id = ?
     """, (
         data.get('client'), data.get('db_type'), data.get('environment'),
         data.get('status'), data.get('start_date'), data.get('end_date'),
         data.get('change_number'), data.get('title'), data.get('assigned_to'),
         data.get('observation'), data.get('vulnerability'), data.get('opened_by'),
+        data.get('squad', 'dba'),
         gmud_id
     ))
     conn.commit()
@@ -1209,6 +1253,16 @@ def get_sla_metrics(client=None):
     """, params)
     by_env = [dict(r) for r in c.fetchall()]
 
+    # By squad
+    c.execute(f"""
+        SELECT COALESCE(squad, 'dba') AS squad,
+               COUNT(*) AS total,
+               SUM(CASE WHEN upper(status) IN ('ENCERRADA','ENCERRADO') THEN 1 ELSE 0 END) AS closed
+        FROM gmuds {where}
+        GROUP BY COALESCE(squad, 'dba') ORDER BY total DESC
+    """, params)
+    by_squad = [dict(r) for r in c.fetchall()]
+
     conn.close()
 
     success_rate = round(closed / total * 100, 1) if total > 0 else 0
@@ -1228,4 +1282,5 @@ def get_sla_metrics(client=None):
         "by_client": by_client,
         "by_person": by_person,
         "by_env": by_env,
+        "by_squad": by_squad,
     }

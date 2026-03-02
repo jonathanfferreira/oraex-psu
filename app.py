@@ -22,7 +22,8 @@ from database import (
     get_user_by_id, verify_user, ensure_admin_exists,
     get_server_details,
     get_all_users, create_user, update_user_status, reset_user_password,
-    get_overdue_gmuds, get_gmuds_calendar, get_sla_metrics
+    get_overdue_gmuds, get_gmuds_calendar, get_sla_metrics,
+    get_all_squads
 )
 from import_excel import run_import, run_cmdb_full_import
 from import_qualys import import_qualys_scan
@@ -54,6 +55,7 @@ class User(UserMixin):
         self.display_name = user_dict['display_name']
         self.role = user_dict['role']
         self.client_restriction = user_dict.get('client_restriction', 'none')
+        self.squad = user_dict.get('squad', 'dba')
 
 
 @login_manager.user_loader
@@ -105,6 +107,20 @@ def login():
 def logout():
     logout_user()
     return redirect("/login")
+
+
+@app.route("/health")
+def health():
+    """Health check endpoint for Cloud Run / load balancers."""
+    try:
+        from database import get_connection
+        conn = get_connection()
+        conn.execute("SELECT 1")
+        conn.close()
+        db_status = "ok"
+    except Exception:
+        db_status = "error"
+    return jsonify({"status": "ok", "db": db_status})
 
 
 # ══════════════════════════════════════════════════════════
@@ -217,8 +233,15 @@ def api_gmuds():
     if user_restriction and user_restriction != 'none':
         client_param = user_restriction
 
+    squad_param = request.args.get('squad')
+    user_squad = getattr(current_user, 'squad', 'dba')
+    # Non-admin users are restricted to their squad unless squad is explicitly overridden by admin
+    if current_user.role not in ('admin',) and not squad_param:
+        squad_param = user_squad
+
     data = get_gmuds(
         client=client_param,
+        squad=squad_param,
         year=request.args.get("year", type=int),
         month=request.args.get("month", type=int),
         status=request.args.get("status"),
@@ -659,6 +682,13 @@ def api_delete_gmud(gmud_id):
     return jsonify({"status": "error", "message": "Falha ao excluir GMUD"})
 
 
+@app.route("/api/squads")
+@login_required
+def api_squads():
+    """List all active squads."""
+    return jsonify(get_all_squads())
+
+
 @app.route("/api/users", methods=["GET"])
 @login_required
 @admin_required
@@ -678,7 +708,8 @@ def api_create_user():
             password=data.get('password'),
             display_name=data.get('display_name'),
             role=data.get('role', 'viewer'),
-            client_restriction=data.get('client_restriction', 'none')
+            client_restriction=data.get('client_restriction', 'none'),
+            squad=data.get('squad', 'dba')
         )
         return jsonify({"status": "success", "user_id": user_id})
     except sqlite3.IntegrityError:
@@ -878,11 +909,5 @@ ensure_admin_exists()
 if __name__ == "__main__":
     print(f"\n ORAEX PSU Manager")
     print(f" Open: http://{HOST}:{PORT}")
-    print(f" Dashboard: http://{HOST}:{PORT}/")
-    print(f" Inventory: http://{HOST}:{PORT}/inventory")
-    print(f" CMDB Full: http://{HOST}:{PORT}/cmdb-full")
-    print(f" GMUDs: http://{HOST}:{PORT}/gmud")
-    print(f" Reports: http://{HOST}:{PORT}/reports")
     print(f" Login: http://{HOST}:{PORT}/login")
-    print(f" Default user: admin / oraex2025\n")
     app.run(host=HOST, port=PORT, debug=DEBUG)
