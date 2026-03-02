@@ -34,7 +34,7 @@ def backup_workbook(file_path):
         backup_path = os.path.join(BACKUP_DIR, f"{filename}_{timestamp}.bak")
         
         shutil.copy2(file_path, backup_path)
-        print(f"📦 Backup criado em: {backup_path}")
+        print(f" Backup criado em: {backup_path}")
         return True, backup_path
     except Exception as e:
         return False, str(e)
@@ -140,7 +140,7 @@ def write_gmud_to_excel(gmud_data):
 
         # 6. Salvar Arquivo
         wb.save(file_path)
-        print(f"✅ GMUD gravada com sucesso na linha {row_idx} da aba {sheet_name}")
+        print(f" GMUD gravada com sucesso na linha {row_idx} da aba {sheet_name}")
         
         return True, f"GMUD criada com sucesso na linha {row_idx}!"
 

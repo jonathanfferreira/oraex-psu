@@ -4,6 +4,7 @@ ORAEX PSU Manager — Database Models & Queries (SQLite)
 import sqlite3
 import os
 from config import DATABASE_PATH
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 def get_connection():
@@ -203,6 +204,20 @@ def init_db():
         )
     """)
 
+    # ── Users (Authentication) ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            display_name TEXT,
+            role TEXT DEFAULT 'viewer',
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)")
+
     # ── Indexes for common queries ──
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_servers_env ON servers(environment)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_servers_psu ON servers(psu_version)")
@@ -219,7 +234,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("✅ Database initialized successfully!")
+    print("[OK] Database initialized successfully!")
 
 
 # ══════════════════════════════════════════════════════════
@@ -695,6 +710,141 @@ def get_cmdb_full_filters():
 
     conn.close()
     return options
+
+
+def get_user_by_id(user_id):
+    """Get user by ID for Flask-Login."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_user_by_username(username):
+    """Get user by username."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM users WHERE username = ?", (username,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def create_user(username, password, display_name=None, role='viewer'):
+    """Create a new user with hashed password."""
+    conn = get_connection()
+    c = conn.cursor()
+    pw_hash = generate_password_hash(password)
+    c.execute("""
+        INSERT INTO users (username, password_hash, display_name, role)
+        VALUES (?, ?, ?, ?)
+    """, (username, pw_hash, display_name or username, role))
+    conn.commit()
+    user_id = c.lastrowid
+    conn.close()
+    return user_id
+
+
+def verify_user(username, password):
+    """Verify username and password. Returns user dict or None."""
+    user = get_user_by_username(username)
+    if user and check_password_hash(user['password_hash'], password):
+        return user
+    return None
+
+
+def ensure_admin_exists():
+    """Create default admin user if no users exist."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM users")
+    count = c.fetchone()[0]
+    conn.close()
+    if count == 0:
+        create_user('admin', 'oraex2025', 'Administrador', 'admin')
+        print("  Default admin user created (admin / oraex2025)")
+
+
+def get_gmud_by_id(gmud_id):
+    """Get a single GMUD by ID."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM gmuds WHERE id = ?", (gmud_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def update_gmud(gmud_id, data):
+    """Update an existing GMUD."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        UPDATE gmuds SET
+            client=?, db_type=?, environment=?, status=?,
+            start_date=?, end_date=?, change_number=?, title=?,
+            assigned_to=?, observation=?, vulnerability=?, opened_by=?
+        WHERE id = ?
+    """, (
+        data.get('client'), data.get('db_type'), data.get('environment'),
+        data.get('status'), data.get('start_date'), data.get('end_date'),
+        data.get('change_number'), data.get('title'), data.get('assigned_to'),
+        data.get('observation'), data.get('vulnerability'), data.get('opened_by'),
+        gmud_id
+    ))
+    conn.commit()
+    affected = c.rowcount
+    conn.close()
+    return affected > 0
+
+
+def delete_gmud(gmud_id):
+    """Delete a GMUD by ID."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM gmuds WHERE id = ?", (gmud_id,))
+    conn.commit()
+    affected = c.rowcount
+    conn.close()
+    return affected > 0
+
+
+def search_hostnames(query, limit=15):
+    """Search hostnames across servers, cmdb_full, and cmdb_databases tables."""
+    conn = get_connection()
+    c = conn.cursor()
+    search_param = f"%{query}%"
+
+    c.execute("""
+        SELECT DISTINCT hostname, source FROM (
+            SELECT primary_hostname AS hostname, 'servers' AS source
+            FROM servers WHERE primary_hostname LIKE ?
+            UNION
+            SELECT standby_hostname AS hostname, 'servers' AS source
+            FROM servers WHERE standby_hostname LIKE ? AND standby_hostname IS NOT NULL AND standby_hostname != ''
+            UNION
+            SELECT hostname, 'cmdb_full' AS source
+            FROM cmdb_full WHERE hostname LIKE ?
+            UNION
+            SELECT contingency AS hostname, 'cmdb_full' AS source
+            FROM cmdb_full WHERE contingency LIKE ? AND contingency IS NOT NULL AND contingency != ''
+            UNION
+            SELECT name AS hostname, 'cmdb' AS source
+            FROM cmdb_databases WHERE name LIKE ?
+            UNION
+            SELECT contingency_name AS hostname, 'cmdb' AS source
+            FROM cmdb_databases WHERE contingency_name LIKE ? AND contingency_name IS NOT NULL AND contingency_name != ''
+        )
+        WHERE hostname IS NOT NULL AND hostname != ''
+        ORDER BY hostname
+        LIMIT ?
+    """, (search_param, search_param, search_param, search_param, search_param, search_param, limit))
+
+    results = [{"hostname": r["hostname"], "source": r["source"]} for r in c.fetchall()]
+    conn.close()
+    return results
 
 
 if __name__ == "__main__":

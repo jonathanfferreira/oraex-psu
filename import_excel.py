@@ -74,7 +74,7 @@ def import_servers(wb, conn):
     """
     sheet_name = "GetNet - Oracle Databases"
     if sheet_name not in wb.sheetnames:
-        print(f"  ⚠️  Sheet '{sheet_name}' not found, skipping.")
+        print(f"  ️  Sheet '{sheet_name}' not found, skipping.")
         return 0
 
     ws = wb[sheet_name]
@@ -133,7 +133,7 @@ def import_servers(wb, conn):
         total_server_count += num_servers
 
     conn.commit()
-    print(f"  ✅ Servers: {count} rows imported ({total_server_count} total servers, including standby)")
+    print(f"   Servers: {count} rows imported ({total_server_count} total servers, including standby)")
     return count
 
 
@@ -141,7 +141,7 @@ def import_cmdb(wb, conn):
     """Import from 'GetNet CMDB - Databases' sheet."""
     sheet_name = "GetNet CMDB - Databases"
     if sheet_name not in wb.sheetnames:
-        print(f"  ⚠️  Sheet '{sheet_name}' not found, skipping.")
+        print(f"  ️  Sheet '{sheet_name}' not found, skipping.")
         return 0
 
     ws = wb[sheet_name]
@@ -189,7 +189,7 @@ def import_cmdb(wb, conn):
         count += 1
 
     conn.commit()
-    print(f"  ✅ CMDB Databases: {count} records imported")
+    print(f"   CMDB Databases: {count} records imported")
     return count
 
 
@@ -201,7 +201,7 @@ def import_gmuds(wb, conn):
 
     for sheet_name, (year, month) in MONTH_SHEETS.items():
         if sheet_name not in wb.sheetnames:
-            print(f"  ⚠️  Sheet '{sheet_name}' not found, skipping.")
+            print(f"  ️  Sheet '{sheet_name}' not found, skipping.")
             continue
 
         ws = wb[sheet_name]
@@ -242,10 +242,10 @@ def import_gmuds(wb, conn):
             count += 1
 
         total_count += count
-        print(f"  ✅ {sheet_name}: {count} GMUDs imported")
+        print(f"   {sheet_name}: {count} GMUDs imported")
 
     conn.commit()
-    print(f"  ✅ Total GMUDs: {total_count} records imported")
+    print(f"   Total GMUDs: {total_count} records imported")
     return total_count
 
 
@@ -253,7 +253,7 @@ def import_planning(wb, conn):
     """Import from 'Planejamento oracle' sheet."""
     sheet_name = "Planejamento oracle"
     if sheet_name not in wb.sheetnames:
-        print(f"  ⚠️  Sheet '{sheet_name}' not found, skipping.")
+        print(f"  ️  Sheet '{sheet_name}' not found, skipping.")
         return 0
 
     ws = wb[sheet_name]
@@ -293,7 +293,7 @@ def import_planning(wb, conn):
         count += 1
 
     conn.commit()
-    print(f"  ✅ Planning: {count} records imported")
+    print(f"   Planning: {count} records imported")
     return count
 
 
@@ -301,7 +301,7 @@ def import_pagonxt(wb, conn):
     """Import from 'PagoNxt - Databases' sheet."""
     sheet_name = "PagoNxt - Databases"
     if sheet_name not in wb.sheetnames:
-        print(f"  ⚠️  Sheet '{sheet_name}' not found, skipping.")
+        print(f"  ️  Sheet '{sheet_name}' not found, skipping.")
         return 0
 
     ws = wb[sheet_name]
@@ -339,7 +339,7 @@ def import_pagonxt(wb, conn):
         count += 1
 
     conn.commit()
-    print(f"  ✅ PagoNxt Databases: {count} records imported")
+    print(f"   PagoNxt Databases: {count} records imported")
     return count
 
 
@@ -348,14 +348,14 @@ def run_import(excel_path=None):
     path = excel_path or EXCEL_PATH
 
     if not os.path.exists(path):
-        print(f"❌ Excel file not found: {path}")
+        print(f" Excel file not found: {path}")
         return False
 
-    print(f"📂 Opening: {os.path.basename(path)}")
-    print(f"⏳ Loading workbook...")
+    print(f" Opening: {os.path.basename(path)}")
+    print(f" Loading workbook...")
 
     wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
-    print(f"✅ Loaded {len(wb.sheetnames)} sheets")
+    print(f" Loaded {len(wb.sheetnames)} sheets")
 
     # Initialize DB
     init_db()
@@ -365,7 +365,7 @@ def run_import(excel_path=None):
     sheets_imported = []
 
     try:
-        print("\n🔄 Importing data...\n")
+        print("\n Importing data...\n")
 
         # Import each data source
         count = import_servers(wb, conn)
@@ -407,15 +407,15 @@ def run_import(excel_path=None):
         conn.commit()
 
         print(f"\n{'='*50}")
-        print(f"🎉 Import complete! {total} total records imported.")
-        print(f"📊 Sources: {', '.join(sheets_imported)}")
-        print(f"💾 Database: {DATABASE_PATH}")
+        print(f" Import complete! {total} total records imported.")
+        print(f" Sources: {', '.join(sheets_imported)}")
+        print(f" Database: {DATABASE_PATH}")
         print(f"{'='*50}")
 
         return True
 
     except Exception as e:
-        print(f"\n❌ Import error: {e}")
+        print(f"\n Import error: {e}")
         conn.execute("""
             INSERT INTO import_log (source_file, sheets_imported, total_records, status, message)
             VALUES (?, ?, ?, ?, ?)
@@ -442,7 +442,7 @@ def import_cmdb_full_getnet(wb, conn):
     """
     sheet_name = "CMDB Geral GETNET Brasil"
     if sheet_name not in wb.sheetnames:
-        print(f"  ⚠️  Sheet '{sheet_name}' not found, skipping.")
+        print(f"  ️  Sheet '{sheet_name}' not found, skipping.")
         return 0
 
     ws = wb[sheet_name]
@@ -505,7 +505,7 @@ def import_cmdb_full_getnet(wb, conn):
         count += 1
 
     conn.commit()
-    print(f"  ✅ CMDB GetNet Brasil: {count} DB servers imported")
+    print(f"   CMDB GetNet Brasil: {count} DB servers imported")
     return count
 
 
@@ -515,7 +515,7 @@ def import_cmdb_full_latam(wb, conn):
     """
     sheet_name = "CMDB Geral LATAM"
     if sheet_name not in wb.sheetnames:
-        print(f"  ⚠️  Sheet '{sheet_name}' not found, skipping.")
+        print(f"  ️  Sheet '{sheet_name}' not found, skipping.")
         return 0
 
     ws = wb[sheet_name]
@@ -579,7 +579,7 @@ def import_cmdb_full_latam(wb, conn):
         count += 1
 
     conn.commit()
-    print(f"  ✅ CMDB LATAM (PagoNxt): {count} DB servers imported")
+    print(f"   CMDB LATAM (PagoNxt): {count} DB servers imported")
     return count
 
 
@@ -616,14 +616,14 @@ def run_cmdb_full_import(excel_path=None):
 
     path = excel_path or CMDB_FULL_PATH
     if not os.path.exists(path):
-        print(f"❌ CMDB Full file not found: {path}")
+        print(f" CMDB Full file not found: {path}")
         return False
 
-    print(f"\n📂 Opening CMDB Full: {os.path.basename(path)}")
-    print(f"⏳ Loading workbook...")
+    print(f"\n Opening CMDB Full: {os.path.basename(path)}")
+    print(f" Loading workbook...")
 
     wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
-    print(f"✅ Loaded {len(wb.sheetnames)} sheets")
+    print(f" Loaded {len(wb.sheetnames)} sheets")
 
     init_db()
     conn = get_connection()
@@ -638,13 +638,13 @@ def run_cmdb_full_import(excel_path=None):
         total += import_cmdb_full_latam(wb, conn)
 
         print(f"\n{'='*50}")
-        print(f"🎉 CMDB Full import complete! {total} DB servers imported.")
-        print(f"💾 Database: {DATABASE_PATH}")
+        print(f" CMDB Full import complete! {total} DB servers imported.")
+        print(f" Database: {DATABASE_PATH}")
         print(f"{'='*50}")
 
         return True
     except Exception as e:
-        print(f"\n❌ CMDB Full import error: {e}")
+        print(f"\n CMDB Full import error: {e}")
         import traceback
         traceback.print_exc()
         raise
