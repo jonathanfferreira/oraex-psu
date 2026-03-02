@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title_suffix %} — SLA & Métricas{% endblock %}
+{% block page_title %}SLA & Métricas Gerenciais{% endblock %}
+{% block page_subtitle %}Desempenho operacional e cumprimento de prazos — GMUDs{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="table-controls" style="margin-bottom:16px;justify-content:flex-end">
+    <select class="filter-select" id="slaClientFilter" onchange="loadSLA()">
+        <option value="">Todos os Clientes</option>
+        <option value="GetNet">GetNet</option>
+        <option value="PagoNxt">PagoNxt</option>
+    </select>
+</div>
+
+<!-- KPI Strip -->
+<div class="kpi-grid" id="slaKpiGrid" style="margin-bottom:16px">
+    <div class="kpi-card accent-2">
+        <div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
+        <div class="kpi-label">Taxa de Sucesso</div>
+        <div class="kpi-value" id="kpiSuccessRate" style="color:var(--success)">—</div>
+        <div class="kpi-detail">GMUDs encerradas / total</div>
+    </div>
+    <div class="kpi-card accent-3">
+        <div class="kpi-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="kpi-label">Prazo Médio</div>
+        <div class="kpi-value" id="kpiAvgDuration">—</div>
+        <div class="kpi-detail">dias por GMUD</div>
+    </div>
+    <div class="kpi-card accent-5">
+        <div class="kpi-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.27 21.7s9.87-3.5 12.73-6.36a4.5 4.5 0 00-6.36-6.37C5.77 11.84 2.27 21.7 2.27 21.7zM15.42 4.58l6 6M18.42 1.58l3 3"/></svg></div>
+        <div class="kpi-label">Taxa de Replanejamento</div>
+        <div class="kpi-value" id="kpiReplanRate" style="color:var(--warning)">—</div>
+        <div class="kpi-detail">GMUDs replanejadas</div>
+    </div>
+    <div class="kpi-card accent-1">
+        <div class="kpi-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        <div class="kpi-label">On-Time Rate</div>
+        <div class="kpi-value" id="kpiOnTime" style="color:var(--oraex-cyan)">—</div>
+        <div class="kpi-detail">Encerradas no prazo</div>
+    </div>
+</div>
+
+<!-- Charts row 1: Trend + By Client -->
+<div class="charts-grid">
+    <div class="chart-card" style="animation-delay:0.2s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">Evolução Mensal</div>
+                <div class="chart-subtitle">Total vs Encerradas — últimos 6 meses</div>
+            </div>
+        </div>
+        <div class="chart-body"><canvas id="chartTrend"></canvas></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.25s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">Por Cliente</div>
+                <div class="chart-subtitle">Distribuição GetNet vs PagoNxt</div>
+            </div>
+        </div>
+        <div class="chart-body"><canvas id="chartClient"></canvas></div>
+    </div>
+</div>
+
+<!-- Charts row 2: By Person + By Env -->
+<div class="charts-grid" style="margin-top:16px">
+    <div class="chart-card" style="animation-delay:0.3s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">Top Responsáveis</div>
+                <div class="chart-subtitle">GMUDs por recurso (top 5)</div>
+            </div>
+        </div>
+        <div class="chart-body"><canvas id="chartPerson"></canvas></div>
+    </div>
+    <div class="chart-card" style="animation-delay:0.35s">
+        <div class="chart-header">
+            <div>
+                <div class="chart-title">Por Ambiente</div>
+                <div class="chart-subtitle">Produção vs outros ambientes</div>
+            </div>
+        </div>
+        <div class="chart-body"><canvas id="chartEnv"></canvas></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let trendChart, clientChart, personChart, envChart;
+
+document.addEventListener('DOMContentLoaded', () => {
+    applyChartDefaults();
+    loadSLA();
+});
+
+async function loadSLA() {
+    const client = document.getElementById('slaClientFilter').value;
+    const url = '/api/metrics/sla' + (client ? `?client=${encodeURIComponent(client)}` : '');
+    try {
+        const r = await fetch(url);
+        const d = await r.json();
+        renderKPIs(d);
+        renderTrend(d);
+        renderClientChart(d);
+        renderPersonChart(d);
+        renderEnvChart(d);
+    } catch (e) {
+        showToast('Erro ao carregar métricas: ' + e.message, 'error');
+    }
+}
+
+function renderKPIs(d) {
+    document.getElementById('kpiSuccessRate').textContent = d.success_rate + '%';
+    document.getElementById('kpiAvgDuration').textContent = d.avg_duration_days || '—';
+    document.getElementById('kpiReplanRate').textContent = d.replan_rate + '%';
+    document.getElementById('kpiOnTime').textContent = d.on_time_rate + '%';
+}
+
+function renderTrend(d) {
+    const labels = d.by_month.map(m => {
+        const months = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+        return `${months[m.month]}/${String(m.year).slice(2)}`;
+    });
+    const totals = d.by_month.map(m => m.total);
+    const closed = d.by_month.map(m => m.closed);
+    if (trendChart) trendChart.destroy();
+    trendChart = new Chart(document.getElementById('chartTrend'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Total', data: totals, borderColor: CHART_COLORS.palette[2], backgroundColor: CHART_COLORS.paletteBg[2], tension: 0.4, fill: true },
+                { label: 'Encerradas', data: closed, borderColor: CHART_COLORS.palette[0], backgroundColor: CHART_COLORS.paletteBg[0], tension: 0.4, fill: true }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+    });
+}
+
+function renderClientChart(d) {
+    if (clientChart) clientChart.destroy();
+    clientChart = new Chart(document.getElementById('chartClient'), {
+        type: 'doughnut',
+        data: {
+            labels: d.by_client.map(c => c.client || 'N/A'),
+            datasets: [{ data: d.by_client.map(c => c.total), backgroundColor: CHART_COLORS.palette.slice(0, d.by_client.length) }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { position: 'bottom' } } }
+    });
+}
+
+function renderPersonChart(d) {
+    if (personChart) personChart.destroy();
+    personChart = new Chart(document.getElementById('chartPerson'), {
+        type: 'bar',
+        data: {
+            labels: d.by_person.map(p => p.assigned_to),
+            datasets: [
+                { label: 'Total', data: d.by_person.map(p => p.total), backgroundColor: CHART_COLORS.paletteBg[2], borderColor: CHART_COLORS.palette[2], borderWidth: 1 },
+                { label: 'Encerradas', data: d.by_person.map(p => p.closed), backgroundColor: CHART_COLORS.paletteBg[0], borderColor: CHART_COLORS.palette[0], borderWidth: 1 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            plugins: { legend: { position: 'top' } },
+            scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
+}
+
+function renderEnvChart(d) {
+    if (envChart) envChart.destroy();
+    envChart = new Chart(document.getElementById('chartEnv'), {
+        type: 'polarArea',
+        data: {
+            labels: d.by_env.map(e => e.environment || 'N/A'),
+            datasets: [{ data: d.by_env.map(e => e.total), backgroundColor: CHART_COLORS.paletteBg.slice(0, d.by_env.length) }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+}
+</script>
+{% endblock %}

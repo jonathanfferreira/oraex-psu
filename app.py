@@ -21,7 +21,8 @@ from database import (
     get_gmud_by_id, update_gmud, delete_gmud,
     get_user_by_id, verify_user, ensure_admin_exists,
     get_server_details,
-    get_all_users, create_user, update_user_status, reset_user_password
+    get_all_users, create_user, update_user_status, reset_user_password,
+    get_overdue_gmuds, get_gmuds_calendar, get_sla_metrics
 )
 from import_excel import run_import, run_cmdb_full_import
 from import_qualys import import_qualys_scan
@@ -157,6 +158,20 @@ def reports():
 @admin_required
 def users_page():
     return render_template("users.html", active="users", page_title="Gestão de Usuários")
+
+
+@app.route("/gmud/calendar")
+@login_required
+def gmud_calendar():
+    """Calendário visual de GMUDs por mês."""
+    return render_template("gmud_calendar.html", active="gmud")
+
+
+@app.route("/sla")
+@login_required
+def sla_page():
+    """Métricas gerenciais e SLA de GMUDs."""
+    return render_template("sla.html", active="sla")
 
 
 # ══════════════════════════════════════════════════════════
@@ -805,6 +820,50 @@ def api_cmdb_full_export():
     content = generate_csv(data["data"], fields)
     return Response(content, mimetype="text/csv",
                     headers={"Content-Disposition": "attachment;filename=cmdb_full.csv"})
+
+
+# ══════════════════════════════════════════════════════════
+#  MANAGEMENT FEATURES API
+# ══════════════════════════════════════════════════════════
+
+@app.route("/api/gmuds/overdue")
+@login_required
+def api_gmuds_overdue():
+    """GMUDs com prazo vencido (end_date passada, não encerradas/canceladas)."""
+    client_param = request.args.get('client')
+    user_restriction = getattr(current_user, 'client_restriction', 'none')
+    if user_restriction and user_restriction != 'none':
+        client_param = user_restriction
+    data = get_overdue_gmuds(client=client_param)
+    return jsonify(data)
+
+
+@app.route("/api/gmuds/calendar")
+@login_required
+def api_gmuds_calendar():
+    """GMUDs agrupadas por dia para o calendário mensal."""
+    from datetime import date
+    now = date.today()
+    year = request.args.get('year', type=int, default=now.year)
+    month = request.args.get('month', type=int, default=now.month)
+    client_param = request.args.get('client')
+    user_restriction = getattr(current_user, 'client_restriction', 'none')
+    if user_restriction and user_restriction != 'none':
+        client_param = user_restriction
+    data = get_gmuds_calendar(year, month, client=client_param)
+    return jsonify(data)
+
+
+@app.route("/api/metrics/sla")
+@login_required
+def api_sla_metrics():
+    """Métricas gerenciais e SLA de GMUDs."""
+    client_param = request.args.get('client')
+    user_restriction = getattr(current_user, 'client_restriction', 'none')
+    if user_restriction and user_restriction != 'none':
+        client_param = user_restriction
+    data = get_sla_metrics(client=client_param)
+    return jsonify(data)
 
 
 # ══════════════════════════════════════════════════════════
