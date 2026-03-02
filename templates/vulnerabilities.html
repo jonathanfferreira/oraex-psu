@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+
+
+<div id="cyber-security-dashboard" class="max-w-7xl mx-auto pb-12" style="padding:0 24px;">
+
+    <!-- Dark Glass Header -->
+    <div class="header-actions"
+        style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end;">
+        <div>
+            <h1 class="font-heading"
+                style="font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; margin: 0; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                Security.HUD
+            </h1>
+            <p style="color: var(--text-muted); margin-top: 4px; font-size: 0.95rem;">Qualys Integrated • Live Threat
+                Assessment</p>
+        </div>
+        <div>
+            <span
+                style="display: inline-block; background: rgba(0, 147, 245, 0.1); color: var(--oraex-cyan); border: 1px solid var(--accent-glow); padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; box-shadow: var(--shadow-glow);">
+                <span
+                    style="display:inline-block; width:8px; height:8px; background:var(--oraex-cyan); border-radius:50%; margin-right:6px; animation: pulse 2s infinite;"></span>
+                System: Active
+            </span>
+        </div>
+    </div>
+
+    <!-- Asymmetric Top Metrics -->
+    <div class="kpi-grid" style="margin-bottom: 24px;">
+
+        <!-- MASSIVE FOCUS METRIC -->
+        <div class="kpi-card accent-3" style="grid-column: span 2;">
+            <div class="kpi-icon orange">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+            </div>
+            <div class="kpi-label" style="text-transform: uppercase; letter-spacing: 1px;">Critical / High Exposures
+            </div>
+            <div class="kpi-value" id="stat-critical" style="color: var(--warning); font-size: 3rem;">—</div>
+            <div class="kpi-detail" style="color: var(--warning);">Action Required Immediately</div>
+        </div>
+
+        <!-- Secondary Metrics -->
+        <div class="kpi-card accent-1">
+            <div class="kpi-icon purple">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="18" rx="2" />
+                    <path d="M2 8h20" />
+                </svg>
+            </div>
+            <div class="kpi-label" style="text-transform: uppercase;">Vulnerable DB Hosts</div>
+            <div class="kpi-value" id="stat-hosts" style="font-size: 2.5rem;">—</div>
+            <div class="kpi-detail">Hosts with detected risks</div>
+        </div>
+
+        <div class="kpi-card accent-3">
+            <div class="kpi-icon orange">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                    <polyline points="2 17 12 22 22 17" />
+                    <polyline points="2 12 12 17 22 12" />
+                </svg>
+            </div>
+            <div class="kpi-label" style="text-transform: uppercase;">Top Risk Env</div>
+            <div class="kpi-value" id="stat-env" style="font-size: 2rem; font-weight: 700;">—</div>
+            <div class="kpi-detail">Most affected environment</div>
+        </div>
+
+    </div>
+
+    <!-- Charts and Logs Section -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px;">
+
+        <!-- Bar Chart Area -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <div class="chart-title">Severity Breakdown</div>
+                    <div class="chart-subtitle">Distribution of vulnerabilities by severity level</div>
+                </div>
+            </div>
+
+            <div class="chart-body"
+                style="height: 280px; position: relative; display: flex; align-items: flex-end; justify-content: space-around; padding-top: 40px;"
+                id="severity-chart">
+                <div class="empty-state" style="width: 100%;">
+                    <p>Initializing Data...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Warning Log / Top 10 -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <div class="chart-title" style="color: var(--warning);">[!] Priority Targets</div>
+                    <div class="chart-subtitle">Direct endpoints requiring action</div>
+                </div>
+            </div>
+            <div class="chart-body" style="height: 280px; overflow-y: auto; padding-right: 8px;">
+                <ul id="top-hosts-list" style="list-style: none; margin: 0; padding: 0;">
+                    <li class="empty-state">
+                        <p>Fetching DB targets...</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="chart-card">
+
+        <div class="chart-header" style="flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h2 class="chart-title">Detection Matrix</h2>
+                <div class="chart-subtitle">Detailed Host and Vulnerability breakdown</div>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                {% if not current_user.client_restriction or current_user.client_restriction == 'none' %}
+                <select id="vulnClientFilter"
+                    style="padding: 8px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px; outline: none;"
+                    onchange="applyVulnFilters()">
+                    <option value="Todos" style="background:#05050A">Global (All)</option>
+                    <option value="GetNet" style="background:#05050A">GetNet</option>
+                    <option value="PagoNxt" style="background:#05050A">PagoNxt</option>
+                </select>
+                {% endif %}
+                <select id="vulnSquadFilter"
+                    style="padding: 8px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px; outline: none;"
+                    onchange="applyVulnFilters()">
+                    <option value="Todas" style="background:#05050A">All Squads</option>
+                    <option value="DBA" style="background:#05050A">DBA</option>
+                    <option value="Middleware" style="background:#05050A">Middleware</option>
+                    <option value="Patch Manager" style="background:#05050A">Patch Manager</option>
+                    <option value="Segurança / Crypto" style="background:#05050A">Segurança / Crypto</option>
+                    <option value="Desenvolvimento" style="background:#05050A">Desenvolvimento</option>
+                    <option value="SO / Infra" style="background:#05050A">SO / Infra</option>
+                </select>
+                <div style="position: relative; display: flex;">
+                    <input type="text" id="searchInput" placeholder=">> SEARCH HOST / QID "
+                        style="padding: 8px 16px; padding-right: 40px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); border-radius: 4px; outline: none; min-width: 250px;">
+                    <div
+                        style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted);">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container" style="overflow-x: auto; padding: 0 20px;">
+            <table class="data-table" id="vulnTable" style="width: 100%; text-align: left; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th
+                            style="padding: 12px 16px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
+                            QID</th>
+                        <th
+                            style="padding: 12px 16px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
+                            Level</th>
+                        <th
+                            style="padding: 12px 16px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
+                            Host Target</th>
+                        <th
+                            style="padding: 12px 16px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
+                            Vulnerability Title & Squad</th>
+                        <th style="padding: 12px 16px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;"
+                            class="hidden lg:table-cell">Env</th>
+                        <th style="padding: 12px 16px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;"
+                            class="hidden xl:table-cell">CMDB Status</th>
+                    </tr>
+                </thead>
+                <tbody id="vulnTableBody">
+                    <tr>
+                        <td colspan="6" style="padding: 40px; text-align: center; color: var(--text-muted);">
+                            <span class="animate-pulse">Loading Matrix Data...</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div
+            style="padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.85rem;">
+            <span id="showingText"
+                style="background: rgba(0, 147, 245, 0.1); color: var(--oraex-cyan); padding: 4px 12px; border-radius: 12px; border: 1px solid rgba(0, 147, 245, 0.2);">Rows:
+                0</span>
+            <span>LIMIT 500 ROWS MAX</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        applyVulnFilters();
+
+        document.getElementById('searchInput').addEventListener('input', function (e) {
+            const term = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#vulnTableBody tr');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(term)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('showingText').textContent = `Rows: ${visibleCount}`;
+        });
+    });
+
+    function applyVulnFilters() {
+        const client = document.getElementById('vulnClientFilter') ? document.getElementById('vulnClientFilter').value : 'Todos';
+        const squad = document.getElementById('vulnSquadFilter').value;
+        const params = new URLSearchParams({ client, squad });
+        loadVulnStats(params);
+        loadVulnList(params);
+    }
+
+    async function loadVulnStats(params) {
+        try {
+            const res = await fetch('/api/vulnerabilities/stats?' + params);
+            const data = await res.json();
+
+            if (data.error) throw new Error(data.error);
+
+            document.getElementById('stat-hosts').textContent = data.total_db_hosts_vulnerable || '0';
+
+            let critCount = 0;
+            let envCounts = {};
+            let maxEnv = 'NOT FOUND';
+            let maxEnvCount = 0;
+
+            data.severity_breakdown.forEach(s => {
+                if (s.severity === '5' || s.severity === '4') critCount += s.count;
+            });
+            document.getElementById('stat-critical').textContent = critCount;
+
+            const hostList = document.getElementById('top-hosts-list');
+            if (data.top_vulnerable_hosts.length === 0) {
+                hostList.innerHTML = '<li class="text-center tech-font text-gray-500 py-4">NO CRITICAL TARGETS.</li>';
+            } else {
+                hostList.innerHTML = '';
+                data.top_vulnerable_hosts.forEach((h, idx) => {
+                    envCounts[h.environment] = (envCounts[h.environment] || 0) + h.count;
+
+                    hostList.innerHTML += `
+                <li class="flex items-center justify-between p-3 border-b border-gray-700 transition-colors group" style="background-color: transparent;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'" onmouseout="this.style.backgroundColor='transparent'">
+                    <div class="flex items-center gap-3">
+                        <div class="text-neo-acid font-black tech-font group-hover:underline">
+                            0${idx + 1}
+                        </div>
+                        <div>
+                            <p class="font-bold text-white text-sm uppercase">${h.asset_name}</p>
+                            <p class="tech-font text-xs text-gray-400 mt-1">${h.db_type || 'UNK'} // ${h.environment}</p>
+                        </div>
+                    </div>
+                        <span class="inline-block px-2 py-1 text-xs font-bold bg-[rgba(239,68,68,0.1)] text-[var(--danger)] border border-[var(--danger)] rounded" style="font-family: 'Space Mono', monospace;">
+                            ${h.count}
+                        </span>
+                    </div>
+                </li>
+                `;
+                });
+
+                for (const [env, count] of Object.entries(envCounts)) {
+                    if (count > maxEnvCount && env !== 'null' && env !== '') {
+                        maxEnvCount = count;
+                        maxEnv = env;
+                    }
+                }
+                document.getElementById('stat-env').textContent = maxEnv;
+            }
+
+            const chartContainer = document.getElementById('severity-chart');
+            if (data.severity_breakdown.length > 0) {
+                chartContainer.innerHTML = '';
+                const maxVal = Math.max(...data.severity_breakdown.map(s => s.count));
+
+                const colors = {
+                    '5': 'bg-neo-danger',
+                    '4': 'bg-neo-warning',
+                    '3': 'bg-neo-yellow',
+                    '2': 'bg-neo-acid',
+                    '1': 'bg-gray-300'
+                };
+                const labels = { '5': 'URG', '4': 'CRIT', '3': 'HIGH', '2': 'MED', '1': 'INF' };
+                const sortedBreakdown = [...data.severity_breakdown].sort((a, b) => parseInt(b.severity) - parseInt(a.severity));
+
+                sortedBreakdown.forEach(s => {
+                    const pct = Math.max((s.count / (maxVal || 1)) * 100, 5);
+                    const bgColor = colors[s.severity] || 'bg-gray-400';
+                    const lbl = labels[s.severity] || `S${s.severity}`;
+
+                    chartContainer.innerHTML += `
+                <div class="flex flex-col items-center group w-1/5 relative">
+                    <div class="absolute -top-10 left-1/2 -translate-x-1/2 text-sm font-black text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-[var(--bg-card)] border border-[var(--border-subtle)] px-2 py-1 z-20 rounded shadow-[var(--shadow-md)]">
+                        ${s.count}
+                    </div>
+                    <div class="relative w-full h-[200px] flex items-end justify-center">
+                        <div class="w-[80%] max-w-[60px] ${bgColor} border border-b-0 border-[rgba(255,255,255,0.1)] transition-all duration-500 ease-out origin-bottom relative shadow-[0_0_15px_rgba(255,255,255,0.1)] rounded-t-sm" style="height: 0%;" data-height="${pct}%" onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='none'">
+                        </div>
+                    </div>
+                    <div class="mt-4 tech-font text-xs font-bold text-[var(--text-secondary)] border-t border-[rgba(255,255,255,0.1)] w-full text-center pt-2">${lbl}</div>
+                </div>
+                `;
+                });
+
+                setTimeout(() => {
+                    chartContainer.querySelectorAll('[data-height]').forEach(el => {
+                        el.style.height = el.getAttribute('data-height');
+                    });
+                }, 100);
+
+            } else {
+                chartContainer.innerHTML = '<div class="text-center tech-font text-[var(--text-muted)] w-full font-bold">>> NO DB DATA <<</div>';
+            }
+
+        } catch (e) {
+            console.error("Stats Error:", e);
+        }
+    }
+
+    async function loadVulnList(params) {
+        const tbody = document.getElementById('vulnTableBody');
+        try {
+            const res = await fetch('/api/vulnerabilities?' + params);
+            const data = await res.json();
+
+            if (data.error) throw new Error(data.error);
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500 uppercase font-bold">No Records Found</td></tr>';
+                document.getElementById('showingText').textContent = `Rows: 0`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach(v => {
+                const sevColors = {
+                    '5': 'color: var(--danger);',
+                    '4': 'color: var(--warning);',
+                    '3': 'color: #eab308;',
+                    '2': 'color: var(--success);',
+                    '1': 'color: var(--text-muted);'
+                };
+                const sc = sevColors[v.severity] || sevColors['1'];
+
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+                tr.addEventListener('mouseover', () => tr.style.background = 'rgba(255,255,255,0.02)');
+                tr.addEventListener('mouseout', () => tr.style.background = 'transparent');
+
+                tr.innerHTML = `
+                <td style="padding: 16px; font-weight: 700; color: var(--text-secondary); font-size: 0.85rem;">
+                    #${v.qid}
+                </td>
+                <td style="padding: 16px;">
+                    <span style="${sc} font-weight: 800; text-transform: uppercase; font-size: 0.75rem; background: rgba(255,255,255,0.03); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                        LVL ${v.severity}
+                    </span>
+                </td>
+                <td style="padding: 16px;">
+                    <div style="font-weight: 700; color: var(--text-primary); text-transform: uppercase;">${v.asset_name}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; text-transform: uppercase;">IP: ${v.asset_ip || '---'} | DB: ${v.db_type || 'UNK'}</div>
+                </td>
+                <td style="padding: 16px;">
+                    <span style="display: inline-block; padding: 2px 8px; margin-bottom: 6px; font-weight: 700; font-size: 0.65rem; text-transform: uppercase; background: rgba(0,136,238,0.1); color: var(--accent-secondary); border-radius: 4px; border: 1px solid rgba(0,136,238,0.2);">${v.squad || '---'}</span>
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${v.title}">
+                        ${v.title}
+                    </div>
+                </td>
+                <td style="padding: 16px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);" class="hidden lg:table-cell">
+                    ${v.environment || '---'}
+                </td>
+                <td style="padding: 16px; border-right: none;" class="hidden xl:table-cell">
+                    <span style="display: inline-block; padding: 4px 8px; font-weight: 700; font-size: 0.65rem; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); color: var(--text-secondary); border-radius: 4px;">
+                      ${v.cmdb_status || '---'}
+                    </span>
+                </td>
+            `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('showingText').textContent = `Rows: ${data.length}`;
+
+        } catch (e) {
+            console.error("List Error:", e);
+            tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-10 text-center text-neo-danger font-bold uppercase">> MATRIX ERROR: ${e.message}</td></tr>`;
+        }
+    }
+</script>
+{% endblock %}

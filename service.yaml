@@ -1,0 +1,63 @@
+﻿apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+    run.googleapis.com/maxScale: "20"
+    run.googleapis.com/urls: '["https://oraex-psu-281885282781.southamerica-east1.run.app","https://oraex-psu-ig3jjj4w3a-rj.a.run.app"]'
+  labels:
+    cloud.googleapis.com/location: southamerica-east1
+    run.googleapis.com/satisfiesPzs: "true"
+  name: oraex-psu
+  namespace: "281885282781"
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: "2"
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 557.0.0
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/startup-cpu-boost: "true"
+      labels:
+        client.knative.dev/nonce: dnzmafxtdv
+        run.googleapis.com/startupProbeType: Default
+    spec:
+      containerConcurrency: 80
+      containers:
+        - env:
+            - name: DATABASE_PATH
+              value: /data/oraex.db
+            - name: ORAEX_SECRET_KEY
+              value: oraex-prod-2025-x7k9m2p4
+            - name: FLASK_DEBUG
+              value: "false"
+          image: southamerica-east1-docker.pkg.dev/oraex-cloud-consulting/docker-repo/oraex-psu:latest
+          ports:
+            - containerPort: 8080
+              name: http1
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          startupProbe:
+            failureThreshold: 1
+            periodSeconds: 240
+            tcpSocket:
+              port: 8080
+            timeoutSeconds: 240
+          volumeMounts:
+            - name: data-vol
+              mountPath: /data
+      volumes:
+        - name: data-vol
+          csi:
+            driver: gcsfuse.run.googleapis.com
+            volumeAttributes:
+              bucketName: oraex-cloud-consulting-data
+      serviceAccountName: 281885282781-compute@developer.gserviceaccount.com
+      timeoutSeconds: 120
+  traffic:
+    - latestRevision: true
+      percent: 100

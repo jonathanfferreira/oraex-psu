@@ -249,7 +249,7 @@
         const btn = document.getElementById('submitBtn');
         const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = ' Salvando...';
+        btn.innerHTML = '⏳ Salvando...';
 
         const formData = new FormData(document.getElementById('gmudForm'));
         const data = Object.fromEntries(formData.entries());

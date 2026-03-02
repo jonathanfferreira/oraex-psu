@@ -98,6 +98,13 @@ def init_db():
             observation TEXT,
             vulnerability TEXT,
             opened_by TEXT,
+            vulnerability_before TEXT,
+            vulnerability_after TEXT,
+            closing_code TEXT,
+            needs_replan TEXT,
+            new_start_date TEXT,
+            new_end_date TEXT,
+            new_gmud TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -204,6 +211,41 @@ def init_db():
         )
     """)
 
+    # ── Qualys Vulnerability Definitions ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS qualys_vulnerabilities (
+            qid INTEGER PRIMARY KEY,
+            title TEXT,
+            severity TEXT,
+            threat TEXT,
+            solution TEXT,
+            category TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # ── Qualys Detections on Servers ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS qualys_detections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            qid INTEGER,
+            asset_name TEXT,
+            asset_ip TEXT,
+            environment TEXT,
+            os TEXT,
+            os_version TEXT,
+            status TEXT,
+            first_detected TEXT,
+            last_detected TEXT,
+            detection_age INTEGER,
+            results TEXT,
+            overdue TEXT,
+            source TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (qid) REFERENCES qualys_vulnerabilities(qid)
+        )
+    """)
+
     # ── Users (Authentication) ──
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -212,6 +254,7 @@ def init_db():
             password_hash TEXT NOT NULL,
             display_name TEXT,
             role TEXT DEFAULT 'viewer',
+            client_restriction TEXT DEFAULT 'none',
             is_active INTEGER DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -231,6 +274,9 @@ def init_db():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_full_status ON cmdb_full(status)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_full_env ON cmdb_full(environment)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_cmdb_full_host ON cmdb_full(hostname)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qualys_det_qid ON qualys_detections(qid)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qualys_det_asset ON qualys_detections(asset_name)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qualys_det_source ON qualys_detections(source)")
 
     conn.commit()
     conn.close()
@@ -241,20 +287,27 @@ def init_db():
 #  QUERY FUNCTIONS
 # ══════════════════════════════════════════════════════════
 
-def get_dashboard_stats():
+def get_dashboard_stats(client=None):
     """Get KPI numbers for the dashboard."""
     conn = get_connection()
     c = conn.cursor()
 
     stats = {}
+    
+    # Prepara restrições de cliente com base no sistema que o usuário preencheu ou solicitou
+    gmuds_client_filter = " AND client = ?" if client and client != 'none' else ""
+    cmdb_client_filter = " WHERE client = ?" if client and client != 'none' else ""
+    client_param = [client] if client and client != 'none' else []
 
-    # Total Oracle servers (counting standby as separate servers)
-    c.execute("SELECT COALESCE(SUM(total_servers), 0) FROM servers")
-    stats["total_servers"] = c.fetchone()[0]
-
-    # Total rows (pairs)
-    c.execute("SELECT COUNT(*) FROM servers")
-    stats["total_rows"] = c.fetchone()[0]
+    # Total Oracle servers (servers is mostly GetNet)
+    if client == 'PagoNxt':
+        stats["total_servers"] = 0
+        stats["total_rows"] = 0
+    else:
+        c.execute("SELECT COALESCE(SUM(total_servers), 0) FROM servers")
+        stats["total_servers"] = c.fetchone()[0]
+        c.execute("SELECT COUNT(*) FROM servers")
+        stats["total_rows"] = c.fetchone()[0]
 
     # Servers with GGS
     c.execute("SELECT COUNT(*) FROM servers WHERE has_ggs = 1")
@@ -289,70 +342,74 @@ def get_dashboard_stats():
     c.execute("SELECT COUNT(*) FROM cmdb_databases")
     stats["total_cmdb"] = c.fetchone()[0]
 
-    # Total CMDB Full (added for Phase 0 consistency)
-    c.execute("SELECT COUNT(*) FROM cmdb_full")
+    # Total CMDB Full
+    c.execute(f"SELECT COUNT(*) FROM cmdb_full{cmdb_client_filter}", client_param)
     stats["total_cmdb_full"] = c.fetchone()[0]
 
-    # CMDB by type
-    c.execute("""
+    # CMDB by type (using cmdb_full is better if we have client filters)
+    c.execute(f"""
         SELECT db_type, COUNT(*) as cnt
-        FROM cmdb_databases
+        FROM cmdb_full
         WHERE db_type IS NOT NULL AND db_type != ''
+        {cmdb_client_filter.replace('WHERE', 'AND')}
         GROUP BY db_type
         ORDER BY cnt DESC
-    """)
+    """, client_param)
     stats["cmdb_by_type"] = [dict(r) for r in c.fetchall()]
 
     # GMUDs stats
-    c.execute("SELECT COUNT(*) FROM gmuds")
+    c.execute(f"SELECT COUNT(*) FROM gmuds WHERE 1=1 {gmuds_client_filter}", client_param)
     stats["total_gmuds"] = c.fetchone()[0]
 
-    c.execute("""
+    c.execute(f"""
         SELECT status, COUNT(*) as cnt
         FROM gmuds
-        WHERE status IS NOT NULL AND status != ''
+        WHERE status IS NOT NULL AND status != '' {gmuds_client_filter}
         GROUP BY status
         ORDER BY cnt DESC
-    """)
+    """, client_param)
     stats["gmuds_by_status"] = [dict(r) for r in c.fetchall()]
 
     # GMUDs by month
-    c.execute("""
+    c.execute(f"""
         SELECT year, month, COUNT(*) as cnt
         FROM gmuds
+        WHERE 1=1 {gmuds_client_filter}
         GROUP BY year, month
         ORDER BY year, month
-    """)
+    """, client_param)
     stats["gmuds_by_month"] = [dict(r) for r in c.fetchall()]
 
     # GMUDs by assigned person
-    c.execute("""
+    c.execute(f"""
         SELECT assigned_to, COUNT(*) as cnt
         FROM gmuds
-        WHERE assigned_to IS NOT NULL AND assigned_to != ''
+        WHERE assigned_to IS NOT NULL AND assigned_to != '' {gmuds_client_filter}
         GROUP BY assigned_to
         ORDER BY cnt DESC
-    """)
+    """, client_param)
     stats["gmuds_by_person"] = [dict(r) for r in c.fetchall()]
 
-    # CMDB by environment
-    c.execute("""
+    # CMDB by environment (using cmdb_full)
+    c.execute(f"""
         SELECT environment, COUNT(*) as cnt
-        FROM cmdb_databases
+        FROM cmdb_full
         WHERE environment IS NOT NULL AND environment != ''
+        {cmdb_client_filter.replace('WHERE', 'AND')}
         GROUP BY environment
         ORDER BY cnt DESC
-    """)
+    """, client_param)
     stats["cmdb_by_env"] = [dict(r) for r in c.fetchall()]
 
-    # CMDB by status
-    c.execute("""
+    # CMDB by status (using cmdb_full)
+    c.execute(f"""
         SELECT status, COUNT(*) as cnt
-        FROM cmdb_databases
+        FROM cmdb_full
         WHERE status IS NOT NULL AND status != ''
+        {cmdb_client_filter.replace('WHERE', 'AND')}
         GROUP BY status
         ORDER BY cnt DESC
-    """)
+    """, client_param)
     stats["cmdb_by_status"] = [dict(r) for r in c.fetchall()]
 
     # Latest import
@@ -400,7 +457,7 @@ def get_servers(environment=None, psu_version=None, search=None, page=1, per_pag
     return {"servers": servers, "total": total, "page": page, "per_page": per_page, "pages": (total + per_page - 1) // per_page}
 
 
-def get_gmuds(year=None, month=None, status=None, assigned_to=None, search=None, page=1, per_page=50):
+def get_gmuds(client=None, year=None, month=None, status=None, assigned_to=None, search=None, page=1, per_page=50):
     """Get GMUDs with optional filters and pagination."""
     conn = get_connection()
     c = conn.cursor()
@@ -409,6 +466,10 @@ def get_gmuds(year=None, month=None, status=None, assigned_to=None, search=None,
     count_query = "SELECT COUNT(*) FROM gmuds WHERE 1=1"
     params = []
 
+    if client and client != 'none' and client != 'Todos':
+        query += " AND client = ?"
+        count_query += " AND client = ?"
+        params.append(client)
     if year:
         query += " AND year = ?"
         count_query += " AND year = ?"
@@ -562,40 +623,65 @@ def get_pagonxt_databases(search=None, page=1, per_page=50):
 
 def get_cmdb_full(client=None, db_type=None, status=None, environment=None,
                   search=None, page=1, per_page=50):
-    """Get CMDB Full database servers with filters and pagination."""
+    """Get CMDB Full database servers with filters and pagination.
+       Enriched with Oracle Inventory data (servers table) where matches found.
+    """
     conn = get_connection()
     c = conn.cursor()
 
     where = []
     params = []
 
+    # Base query now includes LEFT JOIN to servers
+    # We match on hostname and environment to ensure correct mapping
+    base_query = """
+        FROM cmdb_full c
+        LEFT JOIN servers s ON (
+            lower(c.hostname) = lower(s.primary_hostname) 
+            AND c.environment = s.environment
+        )
+    """
+
     if client:
-        where.append("client = ?")
+        where.append("c.client = ?")
         params.append(client)
     if db_type:
-        where.append("db_type = ?")
+        where.append("c.db_type = ?")
         params.append(db_type)
     if status:
-        where.append("status = ?")
+        where.append("c.status = ?")
         params.append(status)
     if environment:
-        where.append("environment = ?")
+        where.append("c.environment = ?")
         params.append(environment)
     if search:
-        where.append("(hostname LIKE ? OR contingency LIKE ? OR system_product LIKE ? OR description LIKE ?)")
+        where.append("(c.hostname LIKE ? OR c.contingency LIKE ? OR c.system_product LIKE ? OR c.description LIKE ?)")
         s = f"%{search}%"
         params.extend([s, s, s, s])
 
     where_clause = " WHERE " + " AND ".join(where) if where else ""
 
-    c.execute(f"SELECT COUNT(*) FROM cmdb_full{where_clause}", params)
+    # Count total
+    c.execute(f"SELECT COUNT(*) {base_query} {where_clause}", params)
     total = c.fetchone()[0]
 
-    c.execute(f"""
-        SELECT * FROM cmdb_full{where_clause}
-        ORDER BY client, environment, hostname
+    # Select fields - mixing CMDB columns with Oracle specific ones
+    # We prefer Oracle PSU version if available, otherwise CMDB DB version
+    select_sql = f"""
+        SELECT 
+            c.*,
+            s.psu_version as oracle_psu,
+            s.start_time as oracle_start,
+            s.end_time as oracle_end,
+            s.observation as oracle_observation,
+            s.primary_contact as oracle_contact
+        {base_query}
+        {where_clause}
+        ORDER BY c.client, c.environment, c.hostname
         LIMIT ? OFFSET ?
-    """, params + [per_page, (page - 1) * per_page])
+    """
+
+    c.execute(select_sql, params + [per_page, (page - 1) * per_page])
     rows = [dict(r) for r in c.fetchall()]
 
     conn.close()
@@ -732,15 +818,15 @@ def get_user_by_username(username):
     return dict(row) if row else None
 
 
-def create_user(username, password, display_name=None, role='viewer'):
+def create_user(username, password, display_name=None, role='viewer', client_restriction='none'):
     """Create a new user with hashed password."""
     conn = get_connection()
     c = conn.cursor()
     pw_hash = generate_password_hash(password)
     c.execute("""
-        INSERT INTO users (username, password_hash, display_name, role)
-        VALUES (?, ?, ?, ?)
-    """, (username, pw_hash, display_name or username, role))
+        INSERT INTO users (username, password_hash, display_name, role, client_restriction)
+        VALUES (?, ?, ?, ?, ?)
+    """, (username, pw_hash, display_name or username, role, client_restriction))
     conn.commit()
     user_id = c.lastrowid
     conn.close()
@@ -755,6 +841,35 @@ def verify_user(username, password):
     return None
 
 
+def get_all_users():
+    """Get all users."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT id, username, display_name, role, client_restriction, is_active, created_at FROM users ORDER BY id")
+    users = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return users
+
+
+def update_user_status(user_id, is_active):
+    """Enable or disable a user."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET is_active = ? WHERE id = ?", (1 if is_active else 0, user_id))
+    conn.commit()
+    conn.close()
+
+
+def reset_user_password(user_id, new_password):
+    """Reset a user's password."""
+    conn = get_connection()
+    c = conn.cursor()
+    pw_hash = generate_password_hash(new_password)
+    c.execute("UPDATE users SET password_hash = ? WHERE id = ?", (pw_hash, user_id))
+    conn.commit()
+    conn.close()
+
+
 def ensure_admin_exists():
     """Create default admin user if no users exist."""
     conn = get_connection()
@@ -763,7 +878,7 @@ def ensure_admin_exists():
     count = c.fetchone()[0]
     conn.close()
     if count == 0:
-        create_user('admin', 'oraex2025', 'Administrador', 'admin')
+        create_user('admin', 'oraex2025', 'Administrador', 'admin', 'none')
         print("  Default admin user created (admin / oraex2025)")
 
 
@@ -849,3 +964,79 @@ def search_hostnames(query, limit=15):
 
 if __name__ == "__main__":
     init_db()
+
+def get_server_details(hostname):
+    """Get detailed info for a specific server (CMDB + Inventory + GMUDs)."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    # 1. Fetch Server Metadata (Union of CMDB Full and Inventory)
+    # We use a similar LEFT JOIN as get_cmdb_full to get the best of both worlds
+    query = """
+        SELECT 
+            c.*,
+            s.psu_version as oracle_psu,
+            s.start_time as oracle_start,
+            s.end_time as oracle_end,
+            s.observation as oracle_observation,
+            s.primary_contact as oracle_contact,
+            s.responsible_team as oracle_team,
+            s.standby_hostname as oracle_standby
+        FROM cmdb_full c
+        LEFT JOIN servers s ON (
+            lower(c.hostname) = lower(s.primary_hostname) 
+            AND c.environment = s.environment
+        )
+        WHERE lower(c.hostname) = lower(?)
+    """
+    c.execute(query, (hostname,))
+    row = c.fetchone()
+    
+    # If not found in CMDB Full, try searching just in Servers (Legacy Inventory)
+    # This handles case where a server might only exist in the old inventory sheet
+    if not row:
+        c.execute("SELECT * FROM servers WHERE lower(primary_hostname) = lower(?)", (hostname,))
+        server_row = c.fetchone()
+        if server_row:
+            # Normalize to match the CMDB structure partly
+            server_data = dict(server_row)
+            server_details = {
+                "hostname": server_data['primary_hostname'],
+                "environment": server_data['environment'],
+                "db_type": "Oracle", # Assumed
+                "status": "In Inventory Only",
+                "oracle_psu": server_data['psu_version'],
+                "oracle_start": server_data['start_time'],
+                "oracle_end": server_data['end_time'],
+                "oracle_observation": server_data['observation'],
+                "primary_contact": server_data['primary_contact'],
+                "responsible_team": server_data['responsible_team'],
+                "system_product": server_data['system_product'],
+                "source": "Inventory Only"
+            }
+        else:
+            conn.close()
+            return None
+    else:
+        server_details = dict(row)
+        server_details["source"] = "CMDB Full"
+
+    # 2. Fetch GMUD History
+    # Search for hostname in GMUD title or observation
+    # Also match environment/client if possible to reduce false positives, 
+    # but hostname is usually unique enough.
+    gmud_query = """
+        SELECT * FROM gmuds 
+        WHERE (title LIKE ? OR observation LIKE ?)
+        ORDER BY start_date DESC
+    """
+    search_term = f"%{hostname}%"
+    c.execute(gmud_query, (search_term, search_term))
+    gmuds = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+    
+    return {
+        "server": server_details,
+        "gmuds": gmuds
+    }

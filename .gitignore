@@ -29,3 +29,7 @@ backups/
 # Logs
 *.log
 nul
+
+.claude/
+
+files.zip
