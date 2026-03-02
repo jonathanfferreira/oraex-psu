@@ -5,8 +5,11 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Database — in Cloud Run, DATABASE_PATH points to mounted GCS volume
-DATABASE_PATH = os.environ.get("DATABASE_PATH", os.path.join(BASE_DIR, "oraex.db"))
+# Database — Cloud SQL PostgreSQL via Auth Proxy (Cloud Run) or local PostgreSQL (dev)
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql://oraex:oraex@localhost:5432/oraex"
+)
 
 # Excel sources (fallback for local usage; in prod, files come via upload)
 EXCEL_PATH = os.environ.get("EXCEL_PATH",

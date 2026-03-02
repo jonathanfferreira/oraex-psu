@@ -1,13 +1,13 @@
 """
 ORAEX PSU Manager — Excel Import Script
-Reads the consolidation spreadsheet and imports data into SQLite.
+Reads the consolidation spreadsheet and imports data into PostgreSQL.
 """
 import openpyxl
-import sqlite3
+import psycopg2
 import os
 import sys
 from datetime import datetime
-from config import DATABASE_PATH, EXCEL_PATH, MONTH_SHEETS
+from config import EXCEL_PATH, MONTH_SHEETS
 from database import init_db, get_connection
 
 
@@ -109,7 +109,7 @@ def import_servers(wb, conn):
                 email_sent, alignment, ggs_version, primary_contact, responsible_team,
                 system_product, application_day, start_time, end_time, observation,
                 total_servers, has_standby, has_ggs)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             safe_str(vals[0]),   # A: ENVIROMENT
             primary,             # B: PRIMARY HOSTNAME
@@ -159,7 +159,7 @@ def import_cmdb(wb, conn):
                 db_version_detail, status, application_day, week_month, start_time, end_time,
                 system, system_product, type, os, primary_contact, function, description,
                 os_type, responsible_team, manager, team_email, validation_contact, ip_address)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             safe_str(vals[0]),   # A: Entorno
             safe_str(vals[1]),   # B: Nome
@@ -260,7 +260,7 @@ def import_gmuds(wb, conn):
                     assigned_to, observation, vulnerability, opened_by,
                     vulnerability_before, vulnerability_after, closing_code,
                     needs_replan, new_start_date, new_end_date, new_gmud)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 year,
                 month,
@@ -317,7 +317,7 @@ def import_planning(wb, conn):
                 start_time, end_time, primary_contact, db_version, bank_version,
                 system, system_product, os, function, description, responsible_team,
                 validation_contact)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             safe_str(vals[0]),   # A: Nome
             safe_str(vals[1]),   # B: Nome da Contingência
@@ -364,7 +364,7 @@ def import_pagonxt(wb, conn):
             INSERT INTO pagonxt_databases (environment, name, contingent, psu_version,
                 contact, zone, product, description, channel, service, observation,
                 ip, instance, status, os)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             safe_str(vals[0]),   # A: ENVIROLMENT
             safe_str(vals[1]),   # B: NAME
@@ -440,9 +440,10 @@ def run_import(excel_path=None):
             sheets_imported.append("pagonxt")
 
         # Log the import
-        conn.execute("""
+        _cur = conn.cursor()
+        _cur.execute("""
             INSERT INTO import_log (source_file, sheets_imported, total_records, status, message)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s)
         """, (
             os.path.basename(path),
             ", ".join(sheets_imported),
@@ -455,16 +456,16 @@ def run_import(excel_path=None):
         print(f"\n{'='*50}")
         print(f" Import complete! {total} total records imported.")
         print(f" Sources: {', '.join(sheets_imported)}")
-        print(f" Database: {DATABASE_PATH}")
         print(f"{'='*50}")
 
         return True
 
     except Exception as e:
         print(f"\n Import error: {e}")
-        conn.execute("""
+        _cur = conn.cursor()
+        _cur.execute("""
             INSERT INTO import_log (source_file, sheets_imported, total_records, status, message)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s)
         """, (os.path.basename(path), "", 0, "error", str(e)))
         conn.commit()
         raise
@@ -513,7 +514,7 @@ def import_cmdb_full_getnet(wb, conn):
                 week_month, application_day, start_time, end_time,
                 importance_level, criticality, scope_pci, scope_sox, scope_pagonxt,
                 ip_service, ip_backup, ip_branca, source_sheet)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             "GetNet",
             safe_str(row[8]),    # Nome
@@ -585,7 +586,7 @@ def import_cmdb_full_latam(wb, conn):
                 week_month, application_day, start_time, end_time,
                 importance_level, criticality, scope_pci, scope_sox, scope_pagonxt,
                 ip_service, ip_backup, ip_branca, zone, country, source_sheet)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             "PagoNxt",
             safe_str(row[8]),    # Nome
@@ -675,7 +676,8 @@ def run_cmdb_full_import(excel_path=None):
     conn = get_connection()
 
     # Clear previous CMDB Full data
-    conn.execute("DELETE FROM cmdb_full")
+    _cur = conn.cursor()
+    _cur.execute("DELETE FROM cmdb_full")
     conn.commit()
 
     total = 0
@@ -685,7 +687,6 @@ def run_cmdb_full_import(excel_path=None):
 
         print(f"\n{'='*50}")
         print(f" CMDB Full import complete! {total} DB servers imported.")
-        print(f" Database: {DATABASE_PATH}")
         print(f"{'='*50}")
 
         return True

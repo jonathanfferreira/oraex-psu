@@ -6,7 +6,8 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from functools import wraps
 import csv
 import io
-import sqlite3
+import psycopg2
+import psycopg2.extras
 import os
 import tempfile
 import re
@@ -480,31 +481,32 @@ def api_vulnerabilities():
         from database import get_connection
         import re
         conn = get_connection()
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
         client_param = request.args.get("client")
         user_restriction = getattr(current_user, 'client_restriction', 'none')
         if user_restriction and user_restriction != 'none':
             client_param = user_restriction
-            
+
         where_clause = ""
         params = []
         if client_param and client_param != 'Todos':
-            where_clause = " WHERE client = ?"
+            where_clause = " WHERE client = %s"
             params.append(client_param)
-            
-        cmdb_rows = cursor.execute(f"SELECT hostname, client, db_type, status FROM cmdb_full{where_clause}", params).fetchall()
+
+        cursor.execute(f"SELECT hostname, client, db_type, status FROM cmdb_full{where_clause}", params)
+        cmdb_rows = cursor.fetchall()
         cmdb_dict = { (r['hostname'] or '').lower(): r for r in cmdb_rows if r['hostname'] }
-        
+
         query = """
-            SELECT d.id, d.qid, d.asset_name, d.asset_ip, d.environment, 
+            SELECT d.id, d.qid, d.asset_name, d.asset_ip, d.environment,
                    d.os, d.status, d.first_detected, d.last_detected,
                    v.title, v.severity, v.solution
             FROM qualys_detections d
             JOIN qualys_vulnerabilities v ON d.qid = v.qid
         """
-        qualys_rows = cursor.execute(query).fetchall()
+        cursor.execute(query)
+        qualys_rows = cursor.fetchall()
         
         result = []
         for q in qualys_rows:
@@ -559,29 +561,30 @@ def api_vulnerabilities_stats():
         from database import get_connection
         import re
         conn = get_connection()
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
         client_param = request.args.get("client")
         user_restriction = getattr(current_user, 'client_restriction', 'none')
         if user_restriction and user_restriction != 'none':
             client_param = user_restriction
-            
+
         where_clause = ""
         params = []
         if client_param and client_param != 'Todos':
-            where_clause = " WHERE client = ?"
+            where_clause = " WHERE client = %s"
             params.append(client_param)
-            
-        cmdb_rows = cursor.execute(f"SELECT hostname, client, db_type, environment, status FROM cmdb_full{where_clause}", params).fetchall()
+
+        cursor.execute(f"SELECT hostname, client, db_type, environment, status FROM cmdb_full{where_clause}", params)
+        cmdb_rows = cursor.fetchall()
         cmdb_dict = { (r['hostname'] or '').lower(): r for r in cmdb_rows if r['hostname'] }
-        
+
         query = """
             SELECT d.asset_name, v.severity, v.title
             FROM qualys_detections d
             JOIN qualys_vulnerabilities v ON d.qid = v.qid
         """
-        qualys_rows = cursor.execute(query).fetchall()
+        cursor.execute(query)
+        qualys_rows = cursor.fetchall()
         conn.close()
         
         hosts_vuln = set()
@@ -712,7 +715,7 @@ def api_create_user():
             squad=data.get('squad', 'dba')
         )
         return jsonify({"status": "success", "user_id": user_id})
-    except sqlite3.IntegrityError:
+    except psycopg2.errors.UniqueViolation:
         return jsonify({"status": "error", "message": "Usuário já existe"}), 400
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500

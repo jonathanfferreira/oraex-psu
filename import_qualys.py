@@ -3,6 +3,7 @@ ORAEX PSU Manager — Qualys Importer
 """
 import os
 import openpyxl
+import psycopg2.extras
 from database import get_connection, init_db
 
 def import_qualys_scan(file_path, source_type):
@@ -21,7 +22,7 @@ def import_qualys_scan(file_path, source_type):
     print(f"✅ Loaded {len(wb.sheetnames)} sheets")
     
     conn = get_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     
     total_detections = 0
     new_qids = 0
@@ -64,11 +65,12 @@ def _upsert_vulnerability(cursor, data):
         return
 
     # Verificar se já existe
-    row = cursor.execute("SELECT qid FROM qualys_vulnerabilities WHERE qid = ?", (qid,)).fetchone()
+    cursor.execute("SELECT qid FROM qualys_vulnerabilities WHERE qid = %s", (qid,))
+    row = cursor.fetchone()
     if not row:
         cursor.execute("""
             INSERT INTO qualys_vulnerabilities (qid, title, severity, threat, solution, category)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """, (
             qid,
             str(data.get('title', '')),
@@ -89,10 +91,10 @@ def _insert_detection(cursor, data):
     
     cursor.execute("""
         INSERT INTO qualys_detections (
-            qid, asset_name, asset_ip, environment, os, os_version, 
-            status, first_detected, last_detected, detection_age, 
+            qid, asset_name, asset_ip, environment, os, os_version,
+            status, first_detected, last_detected, detection_age,
             results, overdue, source
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         qid,
         str(data.get('asset_name', '')),

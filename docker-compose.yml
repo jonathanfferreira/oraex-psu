@@ -1,26 +1,42 @@
-version: '3.8'
+version: '3.9'
 
 services:
-  web:
+  app:
     build: .
     container_name: oraex_app
     ports:
       - "5000:5000"
     volumes:
-      # Hot-Reload: Mount local directory to /app
+      # Hot-reload: mount local directory to /app
       - .:/app
-      # Persist SQLite database outside container
-      - oraex_data:/app/data
       # (Optional) Map backups folder
       - ./backups:/app/backups
     environment:
       - HOST=0.0.0.0
-      - DATABASE_PATH=/app/data/oraex.db
-      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://oraex:oraex@db:5432/oraex
       - FLASK_DEBUG=1
-    # Command to run in dev mode (overrides Dockefile CMD if needed, or just use flask run)
+    depends_on:
+      db:
+        condition: service_healthy
     command: flask run --host=0.0.0.0 --port=5000 --reload
     restart: unless-stopped
 
+  db:
+    image: postgres:16-alpine
+    container_name: oraex_postgres
+    environment:
+      POSTGRES_USER: oraex
+      POSTGRES_PASSWORD: oraex
+      POSTGRES_DB: oraex
+    ports:
+      - "5432:5432"
+    volumes:
+      - oraex_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oraex -d oraex"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
-  oraex_data:
+  oraex_pg_data:

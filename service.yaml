@@ -1,4 +1,4 @@
-﻿apiVersion: serving.knative.dev/v1
+apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   annotations:
@@ -15,6 +15,8 @@ spec:
   template:
     metadata:
       annotations:
+        # Cloud SQL Auth Proxy — connect to Cloud SQL via Unix socket (no password in transit)
+        run.googleapis.com/cloudsql-instances: oraex-cloud-consulting:southamerica-east1:oraex-psu
         autoscaling.knative.dev/maxScale: "2"
         run.googleapis.com/client-name: gcloud
         run.googleapis.com/client-version: 557.0.0
@@ -27,8 +29,11 @@ spec:
       containerConcurrency: 80
       containers:
         - env:
-            - name: DATABASE_PATH
-              value: /data/oraex.db
+            # PostgreSQL via Cloud SQL Auth Proxy Unix socket
+            # Format: postgresql://USER:PASS@/DBNAME?host=/cloudsql/PROJECT:REGION:INSTANCE
+            - name: DATABASE_URL
+              value: "postgresql://oraex:REPLACE_WITH_DB_PASSWORD@/oraex?host=/cloudsql/oraex-cloud-consulting:southamerica-east1:oraex-psu"
+            # Secret Key — move to Secret Manager after initial deploy
             - name: ORAEX_SECRET_KEY
               value: oraex-prod-2025-x7k9m2p4
             - name: FLASK_DEBUG
@@ -47,15 +52,6 @@ spec:
             tcpSocket:
               port: 8080
             timeoutSeconds: 240
-          volumeMounts:
-            - name: data-vol
-              mountPath: /data
-      volumes:
-        - name: data-vol
-          csi:
-            driver: gcsfuse.run.googleapis.com
-            volumeAttributes:
-              bucketName: oraex-cloud-consulting-data
       serviceAccountName: 281885282781-compute@developer.gserviceaccount.com
       timeoutSeconds: 120
   traffic:
