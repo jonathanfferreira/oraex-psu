@@ -906,8 +906,12 @@ def api_sla_metrics():
 
 # Inicializar DB sempre que o módulo for importado
 # (necessário para gunicorn, que não roda via __main__)
-init_db()
-ensure_admin_exists()
+try:
+    init_db()
+    ensure_admin_exists()
+except Exception as _db_err:
+    print(f"[WARN] DB not available at startup: {_db_err}")
+    print("[WARN] Set DATABASE_URL env var and ensure PostgreSQL is running.")
 
 if __name__ == "__main__":
     print(f"\n ORAEX PSU Manager")

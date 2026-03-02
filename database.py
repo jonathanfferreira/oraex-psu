@@ -853,13 +853,16 @@ def get_cmdb_full_filters():
 
 
 def get_user_by_id(user_id):
-    """Get user by ID for Flask-Login."""
-    conn = get_connection()
-    c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    c.execute("SELECT * FROM users WHERE id = %s", (user_id,))
-    row = c.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    """Get user by ID for Flask-Login. Returns None if DB unavailable."""
+    try:
+        conn = get_connection()
+        c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        c.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        row = c.fetchone()
+        conn.close()
+        return dict(row) if row else None
+    except psycopg2.OperationalError:
+        return None
 
 
 def get_user_by_username(username):
